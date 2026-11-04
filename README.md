@@ -1,2 +1,57 @@
-# college-archive-demo
-College archive interactive demo: themes, camera capture, browser-local uploads, tasks and review.
+# 学院资料归档 · 在线演示
+
+一个可直接部署到 GitHub Pages 的 Vue 3 静态演示项目。无需后端、数据库服务或账号，打开即可体验。
+
+**在线体验：<https://GuHang2011.github.io/college-archive-demo/>**
+
+## 可以体验什么
+
+- 工作台：资料总数、待审核、已通过及本地存储用量。
+- 四套主题：青竹绿、学院蓝、暖砂金、海棠红，刷新后保留。
+- 资料归档：选择文件、摄像头拍照、预览、下载、搜索、分类和状态筛选。
+- 限时任务：按任务提交资料、查看提交数量和截止状态。
+- 模拟审核：切换到「管理员体验」，通过或驳回待审核资料，并填写修改意见。
+- 一键重置：恢复五份生成的示例资料，清除本浏览器中的试传文件与审核操作。
+
+所有示例资料均为合成数据。试传文件和审核结果保存在访问者自己的浏览器 IndexedDB 中，不会上传服务器，也不会与其他访问者共享。演示角色切换用于体验流程，不是正式身份认证。
+
+演示版单文件上限 20 MB、每次最多 20 个、总存储上限 50 MB。实际可用空间由浏览器决定。清理网站数据、隐私模式结束或浏览器回收存储后，试传资料可能丢失，请保留原件。
+
+摄像头需要 HTTPS 或本机 localhost，并需要用户授权。只申请视频权限，不录音；确认拍照、取消或离开页面时释放摄像头。手机镜头切换能力取决于设备和浏览器。
+
+## 本地运行
+
+需要 Node.js 18+（建议 Node.js 22 LTS）。
+
+```bash
+npm ci
+npm run dev
+```
+
+## 构建与部署
+
+```bash
+npm run build
+npm run preview
+```
+
+`dist/` 可部署到任何静态托管服务。Vite 使用相对资源路径，兼容 GitHub Pages 项目子路径。页面导航使用 hash，刷新不会依赖服务器路由。
+
+本仓库的 `docs/` 为已验证的构建产物，GitHub Pages 从默认分支的 `/docs` 目录发布。更新源码后重新构建，将 `dist/` 内容同步至 `docs/` 并提交即可发布更新。
+
+## 验证
+
+```bash
+npm run typecheck
+npm run build
+npx playwright install chromium
+npm run test:browser
+```
+
+Windows 测试默认使用已安装的 Edge；其他系统使用 Playwright Chromium。可通过 `TEST_BROWSER_EXECUTABLE` 指定浏览器路径。测试使用模拟摄像头，但真实运行应用的 IndexedDB、上传、预览、下载、任务及审核代码，不模拟后端接口。截图与报告输出到 `test-results/`（不提交）。
+
+通过 `DEMO_BASE_URL` 可对已部署站点运行同一套验证，操作仅影响测试浏览器自己的本地数据。
+
+## 范围
+
+这是正式系统部分功能的独立演示，聚焦换肤、拍照与归档审核流程；不提供真实用户认证、多人协作、服务器存储、AI 服务或正式用印。
