@@ -3,10 +3,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { authorize, complete, configFromEnv, HttpError, validatePayload } from './assistant.mjs';
+import { createCollaboration } from './collaboration.mjs';
 
 const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist');
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
-export function createServer(config = configFromEnv(), fetchImpl = fetch) {
+export function createServer(config = configFromEnv(), fetchImpl = fetch, collaboration) {
   let active = 0, windowStart = Date.now(), calls = 0;
   return http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'no-referrer');
@@ -26,10 +27,14 @@ export function createServer(config = configFromEnv(), fetchImpl = fetch) {
     // Local origins use the actual listening port, never an untrusted Host header.
     const port = req.socket.localPort;
     const origins = [...config.origins, `http://127.0.0.1:${port}`, `http://localhost:${port}`];
-    if (origin && !origins.includes(origin)) return json(403, { error: '此网站不在助手服务允许的来源中。' });
+    if (origin && !origins.includes(origin)) return json(403, { error: '此网站不在服务允许的来源中。' });
     if (origin) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); }
     if (req.method === 'OPTIONS') {
       res.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Max-Age': '600' }); res.end(); return;
+    }
+    if (url.pathname.startsWith('/api/collab/')) {
+      if (!collaboration) return json(503, { error: '通讯服务尚未启用，请联系管理员。' });
+      return collaboration.handle(req, res, url, json);
     }
     if (!config.key || !config.token) return json(503, { error: '助手服务尚未配置。请在服务端设置 AI_API_KEY、AI_MODEL 和 AI_ACCESS_TOKEN 后重启。' });
     if (!authorize(req.headers.authorization, config.token)) return json(401, { error: '服务访问码无效，请检查后重新连接。' });
@@ -63,5 +68,6 @@ export function createServer(config = configFromEnv(), fetchImpl = fetch) {
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const port = Number(process.env.PORT || 4175), host = process.env.HOST || '127.0.0.1';
   const config = configFromEnv();
-  createServer(config).listen(port, host, () => { console.log(`Archive demo: http://${host}:${port}`); console.log(`AI: ${config.key && config.token ? 'configured' : 'not configured; local guidance available'}`); });
+  const collaboration = createCollaboration(path.resolve(process.env.COLLAB_DATA_DIR || path.join(dist, '../.local')));
+  createServer(config, fetch, collaboration).listen(port, host, () => { console.log(`Archive demo: http://${host}:${port}`); console.log(`AI: ${config.key && config.token ? 'configured' : 'not configured; local guidance available'}`); console.log(`Collaboration: ${collaboration.userCount()} accounts; run npm run setup:collaboration to initialize.`); });
 }

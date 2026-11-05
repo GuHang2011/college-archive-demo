@@ -1,6 +1,8 @@
 node_modules/
 dist/
 test-results/
+.local/
+*.sqlite*
 *.log
 .env*
 !.env.example

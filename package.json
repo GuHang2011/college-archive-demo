@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": { "node": ">=22.13.0" },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
@@ -10,7 +11,10 @@
     "preview": "vite preview --host 127.0.0.1",
     "start": "node --env-file-if-exists=.env server/index.mjs",
     "setup:ai": "node scripts/setup-ai.mjs",
+    "setup:collaboration": "node --env-file-if-exists=.env scripts/setup-collaboration.mjs",
     "test:assistant": "node --test scripts/test-assistant.mjs",
+    "test:collaboration": "node --test scripts/test-collaboration.mjs",
+    "test:collaboration:browser": "node scripts/verify-collaboration.cjs",
     "test:assistant:browser": "node scripts/verify-assistant.cjs",
     "test:browser": "node scripts/verify-demo.cjs"
   },
