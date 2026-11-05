@@ -8,6 +8,10 @@
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "setup:ai": "node scripts/setup-ai.mjs",
+    "test:assistant": "node --test scripts/test-assistant.mjs",
+    "test:assistant:browser": "node scripts/verify-assistant.cjs",
     "test:browser": "node scripts/verify-demo.cjs"
   },
   "dependencies": {
