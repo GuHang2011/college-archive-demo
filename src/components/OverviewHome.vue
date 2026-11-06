@@ -1,65 +1,62 @@
 <template>
   <div class="home-overview">
-    <section class="home-hero" aria-labelledby="home-title">
-      <p class="home-eyebrow">学院工作台</p>
-      <h1 id="home-title">学院资料，<br />有序归档。</h1>
-      <p class="home-intro">上传资料、跟进任务，与同事保持同步。</p>
-      <div class="home-actions">
-        <el-button type="primary" :disabled="disabled" @click="emit('upload')">上传资料</el-button>
-        <button class="home-link" @click="emit('navigate', 'archives')">浏览归档 <el-icon><ArrowRight /></el-icon></button>
-      </div>
-    </section>
-
-    <section class="home-library" aria-labelledby="recent-title">
-      <header class="home-section-heading"><h2 id="recent-title">最近归档</h2><button class="home-link" @click="emit('navigate', 'archives')">查看全部 <el-icon><ArrowRight /></el-icon></button></header>
-      <div v-if="recent.length" class="recent-files">
-        <button v-for="file in recent" :key="file.id" class="recent-file" :aria-label="`预览 ${file.name}`" @click="emit('preview', file)">
-          <span class="recent-file-icon" :data-category="file.category"><el-icon><Document /></el-icon></span>
-          <span class="recent-file-name"><strong>{{ file.name }}</strong><small>{{ file.category }} · {{ fileSize(file.size) }}</small></span>
-          <span class="recent-file-status" :class="file.status.toLowerCase()"><i></i>{{ statusText[file.status] }}</span>
-          <time>{{ dateLabel(file.createdAt) }}</time>
-          <el-icon class="recent-file-arrow"><ArrowRight /></el-icon>
-        </button>
-      </div>
-      <div v-else class="home-empty"><el-icon><FolderOpened /></el-icon><h3>还没有归档资料</h3><p>上传文档或拍摄照片，开始整理。</p><button class="home-link" :disabled="disabled" @click="emit('upload')">上传资料 <el-icon><ArrowRight /></el-icon></button></div>
-      <dl class="home-summary" aria-label="归档概览">
-        <div><dt>资料总数</dt><dd>{{ files.length }}<small>份</small></dd></div>
-        <div><dt>等待审核</dt><dd>{{ pending }}<small>份</small></dd></div>
-        <div><dt>已通过审核</dt><dd>{{ approved }}<small>份</small></dd></div>
-        <div><dt>本地存储</dt><dd>{{ (usedBytes / 1024 / 1024).toFixed(1) }}<small>/ 50 MB</small></dd></div>
-      </dl>
-    </section>
-
-    <div class="home-bottom">
-      <section class="home-tasks" aria-labelledby="home-tasks-title">
-        <header class="home-section-heading"><h2 id="home-tasks-title">待办任务</h2><button class="home-link" @click="emit('navigate', 'tasks')">全部任务 <el-icon><ArrowRight /></el-icon></button></header>
-        <article v-for="task in upcoming" :key="task.id" class="home-task" :data-category="task.category">
-          <div><span>{{ task.category }}<i>·</i>{{ Math.max(0, Math.ceil((task.deadline - now) / 86400000)) }} 天后截止</span><h3>{{ task.title }}</h3><small>截止 {{ dateLabel(task.deadline) }}</small></div>
-          <button class="home-link" :disabled="disabled" :aria-label="`提交资料：${task.title}`" @click="emit('upload', task.id)">提交 <el-icon><ArrowRight /></el-icon></button>
-        </article>
-        <p v-if="!upcoming.length" class="home-quiet">暂无待办任务。</p>
+    <header class="home-heading">
+      <div><p class="home-date">{{ today }}</p><h1>工作台</h1><p class="home-description">查看归档进度，继续手头的工作。</p></div>
+      <div class="home-actions"><el-button :icon="FolderOpened" @click="emit('navigate', 'archives')">浏览归档</el-button><el-button type="primary" :icon="Plus" :disabled="disabled" @click="emit('upload')">上传资料</el-button></div>
+    </header>
+    <dl class="home-summary" aria-label="归档概览">
+      <div><dt><el-icon><Files /></el-icon>归档资料</dt><dd>{{ files.length }}<small>份资料</small></dd></div>
+      <div><dt><el-icon><Clock /></el-icon>等待审核</dt><dd>{{ pending }}<small>份待处理</small></dd></div>
+      <div><dt><el-icon><CircleCheck /></el-icon>已通过审核</dt><dd>{{ approved }}<small>份已完成</small></dd></div>
+      <div><dt><el-icon><Coin /></el-icon>本地存储</dt><dd>{{ (usedBytes / 1024 / 1024).toFixed(1) }}<small>/ 50 MB</small></dd></div>
+    </dl>
+    <div class="home-columns">
+      <section class="home-library" aria-labelledby="recent-title">
+        <header class="home-section-heading"><h2 id="recent-title">最近归档</h2><button class="home-link" @click="emit('navigate', 'archives')">查看全部 <el-icon><ArrowRight /></el-icon></button></header>
+        <div class="home-view-switch" role="group" aria-label="首页资料筛选"><button :aria-pressed="!pendingOnly" @click="pendingOnly = false">全部资料</button><button :aria-pressed="pendingOnly" @click="pendingOnly = true">待审核 <span>{{ pending }}</span></button></div>
+        <div v-if="recent.length" class="recent-files">
+          <div class="recent-columns" aria-hidden="true"><span>资料名称</span><span>状态</span></div>
+          <button v-for="file in recent" :key="file.id" class="recent-file" :aria-label="`预览 ${file.name}`" @click="emit('preview', file)">
+            <span class="recent-file-icon" :data-category="file.category"><el-icon><Document /></el-icon></span>
+            <span class="recent-file-name"><strong :title="file.name">{{ file.name }}</strong><small>{{ file.category }}<i>·</i>{{ dateLabel(file.createdAt) }}<i>·</i>{{ fileSize(file.size) }}</small></span>
+            <span class="recent-file-status" :class="file.status.toLowerCase()"><i></i>{{ statusText[file.status] }}</span><el-icon class="recent-file-arrow"><ArrowRight /></el-icon>
+          </button>
+        </div>
+        <div v-else class="home-empty"><el-icon><FolderOpened /></el-icon><h3>{{ pendingOnly ? '没有待审核的资料' : '还没有归档资料' }}</h3><p>{{ pendingOnly ? '提交新资料后，可以在这里跟进审核状态。' : '上传文档或拍摄照片，开始整理。' }}</p><button v-if="!pendingOnly" class="home-link" :disabled="disabled" @click="emit('upload')">上传资料 <el-icon><ArrowRight /></el-icon></button></div>
+        <p class="home-library-note">{{ pendingOnly ? '显示待审核资料，点击文件可预览。' : '按归档时间排序，点击文件可预览。' }}</p>
       </section>
-      <section class="home-team" aria-labelledby="home-team-title">
-        <header class="home-section-heading"><h2 id="home-team-title">沟通与协作</h2></header>
-        <button class="home-shortcut" data-section="chat" @click="emit('navigate', 'chat')"><el-icon><ChatDotRound /></el-icon><span><strong>内部通讯</strong><small>联系同事，传输资料</small></span><b v-if="unreadChat">{{ unreadChat }} 条未读</b><el-icon><ArrowRight /></el-icon></button>
-        <button class="home-shortcut" data-section="broadcasts" @click="emit('navigate', 'broadcasts')"><el-icon><Bell /></el-icon><span><strong>广播通知</strong><small>查看学院通知与工作安排</small></span><b v-if="unreadBroadcast">{{ unreadBroadcast }} 条未读</b><el-icon><ArrowRight /></el-icon></button>
-        <button class="home-shortcut" data-section="assistant" @click="emit('navigate', 'assistant')"><el-icon><EditPen /></el-icon><span><strong>AI 助手</strong><small>整理清单，起草归档说明</small></span><el-icon><ArrowRight /></el-icon></button>
+      <section class="home-tasks" aria-labelledby="home-tasks-title">
+        <header class="home-section-heading"><h2 id="home-tasks-title">待办任务 <span class="section-count">{{ upcoming.length }}</span></h2><el-icon><Calendar /></el-icon></header>
+        <div class="home-task-list">
+          <article v-for="task in upcoming" :key="task.id" class="home-task" :data-category="task.category">
+            <div class="home-task-category"><span><i></i>{{ task.category }}</span><span class="task-due" :class="{ soon: daysLeft(task.deadline) <= 3 }">{{ daysLeft(task.deadline) }} 天后截止</span></div><h3>{{ task.title }}</h3>
+            <div class="home-task-bottom"><small>{{ dateLabel(task.deadline) }}</small><button class="home-link" :disabled="disabled" :aria-label="`提交资料：${task.title}`" @click="emit('upload', task.id)">提交资料 <el-icon><ArrowRight /></el-icon></button></div>
+          </article>
+          <p v-if="!upcoming.length" class="home-quiet">暂无待办任务。</p><button class="home-task-all" @click="emit('navigate', 'tasks')">查看全部任务 <el-icon><ArrowRight /></el-icon></button>
+        </div>
       </section>
     </div>
+    <section class="home-team" aria-labelledby="home-team-title">
+      <header class="home-section-heading"><h2 id="home-team-title">团队与工具</h2><span>继续协作</span></header>
+      <div class="home-shortcuts">
+        <button class="home-shortcut" data-section="chat" @click="emit('navigate', 'chat')"><span class="shortcut-symbol"><el-icon><ChatDotRound /></el-icon></span><span><strong>内部通讯 <b v-if="unreadChat">{{ unreadChat }}</b></strong><small>联系同事，分享工作资料</small></span><el-icon><ArrowRight /></el-icon></button>
+        <button class="home-shortcut" data-section="broadcasts" @click="emit('navigate', 'broadcasts')"><span class="shortcut-symbol"><el-icon><Bell /></el-icon></span><span><strong>广播通知 <b v-if="unreadBroadcast">{{ unreadBroadcast }}</b></strong><small>查看学院通知与置顶消息</small></span><el-icon><ArrowRight /></el-icon></button>
+        <button class="home-shortcut" data-section="assistant" @click="emit('navigate', 'assistant')"><span class="shortcut-symbol"><el-icon><EditPen /></el-icon></span><span><strong>AI 助手</strong><small>整理资料清单，起草说明</small></span><el-icon><ArrowRight /></el-icon></button>
+      </div>
+    </section>
   </div>
 </template>
-
 <script setup lang="ts">
-import { computed } from 'vue';
-import { ArrowRight, Bell, ChatDotRound, Document, EditPen, FolderOpened } from '@element-plus/icons-vue';
+import { computed, ref } from 'vue';
+import { ArrowRight, Bell, Calendar, ChatDotRound, CircleCheck, Clock, Coin, Document, EditPen, Files, FolderOpened, Plus } from '@element-plus/icons-vue';
 import { dateLabel, fileSize, statusText, type Archive } from '../data';
+import '../home.css';
 type Destination = 'archives' | 'tasks' | 'chat' | 'broadcasts' | 'assistant';
-const props = defineProps<{
-  files: Archive[]; pending: number; approved: number; usedBytes: number; now: number;
-  tasks: { id: number; title: string; category: string; deadline: number }[];
-  unreadChat: number; unreadBroadcast: number; disabled: boolean;
-}>();
+const props = defineProps<{ files: Archive[]; pending: number; approved: number; usedBytes: number; now: number; tasks: { id: number; title: string; category: string; deadline: number }[]; unreadChat: number; unreadBroadcast: number; disabled: boolean }>();
 const emit = defineEmits<{ (e: 'upload', taskId?: number): void; (e: 'navigate', destination: Destination): void; (e: 'preview', file: Archive): void }>();
-const recent = computed(() => props.files.slice(0, 3));
+const pendingOnly = ref(false);
+const recent = computed(() => (pendingOnly.value ? props.files.filter(file => file.status === 'PENDING') : props.files).slice(0, 5));
 const upcoming = computed(() => props.tasks.filter(task => task.deadline > props.now).sort((a, b) => a.deadline - b.deadline).slice(0, 2));
+const today = computed(() => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: 'long', day: 'numeric', weekday: 'long' }).format(props.now));
+const daysLeft = (deadline: number) => Math.max(0, Math.ceil((deadline - props.now) / 86400000));
 </script>

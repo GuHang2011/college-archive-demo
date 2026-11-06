@@ -1,5 +1,5 @@
 export const themes = [
-  { id: 'silver', name: '极简白', color: '#0071e3', pale: '#eef5ff', rail: '#1d1d1f', canvas: '#f5f5f7' },
+  { id: 'silver', name: '极简白', color: '#4d5fb1', pale: '#eef0fa', rail: '#252831', canvas: '#ffffff' },
   { id: 'bamboo', name: '青竹绿', color: '#177b66', pale: '#e7f2ed', rail: '#113e38', canvas: '#f5f6f2' },
   { id: 'blue', name: '学院蓝', color: '#2c62ad', pale: '#e7eef8', rail: '#173755', canvas: '#f3f5f9' },
   { id: 'sand', name: '暖砂金', color: '#936321', pale: '#f4ebd8', rail: '#443a29', canvas: '#f8f5ee' },

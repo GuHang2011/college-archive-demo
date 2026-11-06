@@ -4,7 +4,10 @@
       <a class="brand" href="#overview"><span class="brand-mark"><el-icon><Collection /></el-icon></span><span><strong>学院资料归档</strong><small>学院工作空间</small></span></a>
       <div class="sidebar-label">工作空间 <span>演示版</span></div>
       <nav aria-label="演示功能导航">
-        <button v-for="item in navigation" :key="item.id" :data-section="item.id" :class="{ active: pane === item.id }" :aria-current="pane === item.id ? 'page' : undefined" @click="navigate(item.id)"><el-icon><component :is="item.icon" /></el-icon>{{ item.label }}<span v-if="item.id === 'audit'" class="nav-count">{{ pending.length }}</span><span v-if="item.id === 'chat' && unreadChat" class="nav-count">{{ unreadChat }}</span><span v-if="item.id === 'broadcasts' && unreadBroadcast" class="nav-count">{{ unreadBroadcast }}</span></button>
+        <template v-for="item in navigation" :key="item.id">
+          <div v-if="['archives', 'chat', 'assistant'].includes(item.id)" class="nav-group-label">{{ item.id === 'archives' ? '资料管理' : item.id === 'chat' ? '团队协作' : '辅助工具' }}</div>
+          <button :data-section="item.id" :class="{ active: pane === item.id }" :aria-current="pane === item.id ? 'page' : undefined" @click="navigate(item.id)"><el-icon><component :is="item.icon" /></el-icon>{{ item.label }}<span v-if="item.id === 'audit'" class="nav-count">{{ pending.length }}</span><span v-if="item.id === 'chat' && unreadChat" class="nav-count">{{ unreadChat }}</span><span v-if="item.id === 'broadcasts' && unreadBroadcast" class="nav-count">{{ unreadBroadcast }}</span></button>
+        </template>
       </nav>
       <div class="sidebar-storage"><div><span>本地归档空间</span><span>{{ (usedBytes / 1024 / 1024).toFixed(1) }} / 50 MB</span></div><progress :value="usedBytes" :max="MAX_TOTAL" aria-label="本地归档空间用量"></progress><small>资料保存在当前浏览器</small></div>
       <button class="reset-button" :disabled="busy || loading" @click="resetDemo"><el-icon><RefreshLeft /></el-icon>重置演示数据</button>
@@ -92,9 +95,13 @@ const tasks = [
   { id: 3, title: '上一阶段社会服务总结', category: '社会服务', deadline: Date.now() - day, description: '此项任务已截止，可查看任务说明，体验截止后不可提交的状态。' },
 ];
 const navigation = computed(() => [
-  { id: 'overview' as Pane, label: '工作台', icon: House }, { id: 'archives' as Pane, label: '资料归档', icon: Files },
-  { id: 'chat' as Pane, label: '内部通讯', icon: Message }, { id: 'broadcasts' as Pane, label: '广播通知', icon: Bell },
-  { id: 'tasks' as Pane, label: '限时任务', icon: Calendar }, { id: 'assistant' as Pane, label: 'AI 助手', icon: ChatDotRound }, ...(role.value === 'admin' ? [{ id: 'audit' as Pane, label: '资料审核', icon: Stamp }] : []),
+  { id: 'overview' as Pane, label: '工作台', icon: House },
+  { id: 'archives' as Pane, label: '资料归档', icon: Files },
+  { id: 'tasks' as Pane, label: '限时任务', icon: Calendar },
+  ...(role.value === 'admin' ? [{ id: 'audit' as Pane, label: '资料审核', icon: Stamp }] : []),
+  { id: 'chat' as Pane, label: '内部通讯', icon: Message },
+  { id: 'broadcasts' as Pane, label: '广播通知', icon: Bell },
+  { id: 'assistant' as Pane, label: 'AI 助手', icon: ChatDotRound },
 ]);
 const pageTitle = computed(() => navigation.value.find(item => item.id === pane.value)?.label || '工作台');
 const selectedTask = computed(() => tasks.find(task => task.id === taskId.value));

@@ -18,10 +18,14 @@ const { chromium } = require('@playwright/test');
     await page.goto(base); await page.getByRole('heading', { name: '最近归档', exact: true }).waitFor();
     await page.locator('.el-loading-mask').waitFor({ state: 'hidden' });
     const type = await page.evaluate(() => Object.fromEntries(['body', '.home-actions .el-button', '.recent-file-name strong', '.recent-file-name small'].map(selector => [selector, parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)])));
-    assert.equal(type.body, 16); assert.equal(type['.home-actions .el-button'], 16);
+    assert.equal(type.body, 16); assert.equal(type['.home-actions .el-button'], 15);
     assert.equal(type['.recent-file-name strong'], 16); assert.equal(type['.recent-file-name small'], 13);
     const colors = await page.locator('.recent-file-icon').evaluateAll(elements => elements.map(el => getComputedStyle(el).backgroundColor));
-    assert.equal(new Set(colors).size, 3);
+    assert.equal(new Set(colors).size, 4);
+    await page.getByRole('group', { name: '首页资料筛选' }).getByRole('button', { name: /^待审核/ }).click();
+    assert.equal(await page.locator('.recent-file').count(), 2);
+    await page.getByRole('button', { name: '全部资料', exact: true }).click();
+    assert.equal(await page.locator('.recent-file').count(), 5);
     checks.push('Default body and file names are 16px; metadata is 13px; categories have distinct colors');
     await page.locator('.role-select').click(); await page.locator('.el-select-dropdown__item').getByText('管理员体验', { exact: true }).click();
     const routes = [['工作台', 'overview'], ['资料归档', 'archives'], ['限时任务', 'tasks'], ['资料审核', 'audit'], ['AI 助手', 'assistant'], ['内部通讯', 'chat'], ['广播通知', 'broadcasts']];
@@ -58,7 +62,7 @@ const { chromium } = require('@playwright/test');
     for (const name of ['极简白', '青竹绿', '学院蓝', '暖砂金', '海棠红']) {
       await page.getByRole('button', { name: '切换界面主题' }).click(); await page.getByRole('button', { name }).click();
       await page.getByRole('button', { name: '切换界面主题' }).click(); await checkWidth(name);
-      assert.equal(await page.locator('.home-hero').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+      assert.equal(await page.locator('.home-heading').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
     }
     checks.push('All five color choices work with the neutral layout');
     assert.deepEqual(errors, []);
