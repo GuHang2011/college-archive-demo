@@ -14,7 +14,7 @@
       <header class="home-section-heading"><h2 id="recent-title">最近归档</h2><button class="home-link" @click="emit('navigate', 'archives')">查看全部 <el-icon><ArrowRight /></el-icon></button></header>
       <div v-if="recent.length" class="recent-files">
         <button v-for="file in recent" :key="file.id" class="recent-file" :aria-label="`预览 ${file.name}`" @click="emit('preview', file)">
-          <span class="recent-file-icon"><el-icon><Document /></el-icon></span>
+          <span class="recent-file-icon" :data-category="file.category"><el-icon><Document /></el-icon></span>
           <span class="recent-file-name"><strong>{{ file.name }}</strong><small>{{ file.category }} · {{ fileSize(file.size) }}</small></span>
           <span class="recent-file-status" :class="file.status.toLowerCase()"><i></i>{{ statusText[file.status] }}</span>
           <time>{{ dateLabel(file.createdAt) }}</time>
@@ -33,7 +33,7 @@
     <div class="home-bottom">
       <section class="home-tasks" aria-labelledby="home-tasks-title">
         <header class="home-section-heading"><h2 id="home-tasks-title">待办任务</h2><button class="home-link" @click="emit('navigate', 'tasks')">全部任务 <el-icon><ArrowRight /></el-icon></button></header>
-        <article v-for="task in upcoming" :key="task.id" class="home-task">
+        <article v-for="task in upcoming" :key="task.id" class="home-task" :data-category="task.category">
           <div><span>{{ task.category }}<i>·</i>{{ Math.max(0, Math.ceil((task.deadline - now) / 86400000)) }} 天后截止</span><h3>{{ task.title }}</h3><small>截止 {{ dateLabel(task.deadline) }}</small></div>
           <button class="home-link" :disabled="disabled" :aria-label="`提交资料：${task.title}`" @click="emit('upload', task.id)">提交 <el-icon><ArrowRight /></el-icon></button>
         </article>
@@ -41,9 +41,9 @@
       </section>
       <section class="home-team" aria-labelledby="home-team-title">
         <header class="home-section-heading"><h2 id="home-team-title">沟通与协作</h2></header>
-        <button class="home-shortcut" @click="emit('navigate', 'chat')"><el-icon><ChatDotRound /></el-icon><span><strong>内部通讯</strong><small>联系同事，传输资料</small></span><b v-if="unreadChat">{{ unreadChat }} 条未读</b><el-icon><ArrowRight /></el-icon></button>
-        <button class="home-shortcut" @click="emit('navigate', 'broadcasts')"><el-icon><Bell /></el-icon><span><strong>广播通知</strong><small>查看学院通知与工作安排</small></span><b v-if="unreadBroadcast">{{ unreadBroadcast }} 条未读</b><el-icon><ArrowRight /></el-icon></button>
-        <button class="home-shortcut" @click="emit('navigate', 'assistant')"><el-icon><EditPen /></el-icon><span><strong>AI 助手</strong><small>整理清单，起草归档说明</small></span><el-icon><ArrowRight /></el-icon></button>
+        <button class="home-shortcut" data-section="chat" @click="emit('navigate', 'chat')"><el-icon><ChatDotRound /></el-icon><span><strong>内部通讯</strong><small>联系同事，传输资料</small></span><b v-if="unreadChat">{{ unreadChat }} 条未读</b><el-icon><ArrowRight /></el-icon></button>
+        <button class="home-shortcut" data-section="broadcasts" @click="emit('navigate', 'broadcasts')"><el-icon><Bell /></el-icon><span><strong>广播通知</strong><small>查看学院通知与工作安排</small></span><b v-if="unreadBroadcast">{{ unreadBroadcast }} 条未读</b><el-icon><ArrowRight /></el-icon></button>
+        <button class="home-shortcut" data-section="assistant" @click="emit('navigate', 'assistant')"><el-icon><EditPen /></el-icon><span><strong>AI 助手</strong><small>整理清单，起草归档说明</small></span><el-icon><ArrowRight /></el-icon></button>
       </section>
     </div>
   </div>
