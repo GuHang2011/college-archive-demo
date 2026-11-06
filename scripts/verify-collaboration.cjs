@@ -73,7 +73,8 @@ const { chromium } = require('@playwright/test');
     await check('reading settings persist and mobile chat remains usable with larger type', async () => {
       await teacher.getByRole('button', { name: '字体与阅读设置' }).click(); await teacher.getByRole('button', { name: '舒适', exact: true }).click(); await teacher.getByRole('button', { name: '阅读宋体', exact: true }).click();
       await teacher.reload(); await teacher.getByRole('button', { name: '登录并连接' }).waitFor(); assert.equal(await teacher.evaluate(() => document.documentElement.style.getPropertyValue('--reader-scale')), '1.12');
-      await teacher.getByRole('button', { name: '字体与阅读设置' }).click(); await teacher.getByRole('button', { name: '清晰黑体', exact: true }).click(); await teacher.getByRole('heading', { name: '内部通讯', exact: true }).click();
+      await teacher.getByRole('button', { name: '字体与阅读设置' }).click(); await teacher.getByRole('button', { name: '清晰黑体', exact: true }).click(); await teacher.getByRole('button', { name: '字体与阅读设置' }).click();
+      await teacher.locator('.reading-settings').waitFor({ state: 'hidden' });
       await teacher.getByLabel('通讯账号', { exact: true }).fill('teacher1'); await teacher.getByLabel('通讯密码', { exact: true }).fill(password); await teacher.getByRole('button', { name: '登录并连接' }).click();
       await teacher.getByRole('heading', { name: '课程建设工作组', exact: true }).waitFor();
       await teacher.setViewportSize({ width: 390, height: 844 }); await teacher.waitForFunction(() => document.querySelectorAll('.el-message').length === 0);

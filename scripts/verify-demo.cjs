@@ -42,12 +42,18 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
     const awaitRows = count => page.waitForFunction(count => document.querySelectorAll('.archive-table .el-table__body tbody tr').length === count, count);
     await page.goto(base);
     await check('Standalone site works under a GitHub Pages project subpath with five generated samples', async () => {
-      await page.getByText('当前浏览器的归档记录', { exact: true }).waitFor();
-      await page.waitForFunction(() => document.querySelector('.metrics strong')?.textContent?.includes('5'));
-      await page.getByRole('button', { name: '上传第一份资料', exact: true }).waitFor();
-      await page.waitForFunction(() => !document.querySelector('.hero-actions button')?.disabled);
+      await page.getByRole('heading', { name: '最近归档', exact: true }).waitFor();
+      await page.waitForFunction(() => document.querySelector('.home-summary dd')?.textContent?.includes('5'));
+      await page.getByRole('button', { name: '上传资料', exact: true }).waitFor();
+      await page.waitForFunction(() => !document.querySelector('.home-actions button')?.disabled);
       await page.locator('.el-loading-mask').waitFor({ state: 'hidden' });
       await page.screenshot({ path: path.join(output, 'desktop-overview.png'), fullPage: true });
+      await page.getByRole('button', { name: '预览 课程建设阶段总结.png', exact: true }).click();
+      await page.getByAltText('归档资料预览').waitFor();
+      await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click();
+      await page.getByRole('button', { name: '提交资料：创新实践与学生成长记录', exact: true }).click();
+      const homeTask = page.getByRole('dialog', { name: '提交任务：创新实践与学生成长记录', exact: true });
+      await homeTask.waitFor(); await homeTask.getByRole('button', { name: '取消', exact: true }).click();
       await go('资料归档'); await awaitRows(5);
     });
     await check('Sample image preview and download produce a real image', async () => {
@@ -113,7 +119,9 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
       await page.waitForFunction(() => document.querySelectorAll('.el-message').length === 0);
       await page.screenshot({ path: path.join(output, 'mobile-tasks.png'), fullPage: true });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-      await go('工作台'); await page.screenshot({ path: path.join(output, 'mobile-overview.png'), fullPage: true });
+      await go('工作台');
+      await page.waitForFunction(() => document.querySelector('nav button[aria-current="page"]')?.textContent.trim() === '工作台');
+      await page.screenshot({ path: path.join(output, 'mobile-overview.png'), fullPage: true });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     });
     await check('Reset removes local uploads and restores sample data without clearing theme', async () => {

@@ -6,7 +6,7 @@ import { ref } from 'vue';
 const sizes = [{ id: 'standard', name: '标准', scale: '1' }, { id: 'comfortable', name: '舒适', scale: '1.12' }, { id: 'large', name: '大字', scale: '1.24' }];
 const size = ref('standard'), font = ref('sans');
 try { const saved = JSON.parse(localStorage.getItem('college-reading') || '{}'); if (sizes.some(item => item.id === saved.size)) size.value = saved.size; if (['sans', 'serif'].includes(saved.font)) font.value = saved.font; } catch { /* Default remains usable when storage is unavailable. */ }
-function apply() { document.documentElement.style.setProperty('--reader-scale', sizes.find(item => item.id === size.value)!.scale); document.documentElement.style.setProperty('--reader-font', font.value === 'sans' ? '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif' : '"Songti SC", "SimSun", serif'); try { localStorage.setItem('college-reading', JSON.stringify({ size: size.value, font: font.value })); } catch { /* Current session still works. */ } }
+function apply() { document.documentElement.style.setProperty('--reader-scale', sizes.find(item => item.id === size.value)!.scale); document.documentElement.style.setProperty('--reader-font', font.value === 'sans' ? '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif' : '"Songti SC", "SimSun", serif'); try { localStorage.setItem('college-reading', JSON.stringify({ size: size.value, font: font.value })); } catch { /* Current session still works. */ } }
 apply();
 </script>
 <style>

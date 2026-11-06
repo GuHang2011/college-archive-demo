@@ -6,8 +6,9 @@
 
 ## 可以体验什么
 
-- 工作台：资料总数、待审核、已通过及本地存储用量。
-- 四套主题：青竹绿、学院蓝、暖砂金、海棠红，刷新后保留。
+- 工作台：最近归档预览、待办任务、协作入口，以及资料数量和本地存储用量。
+- 统一的简洁界面：浅色导航、黑白灰层级与清晰字号，覆盖归档、任务、审核、AI 助手、通讯、广播和弹窗。
+- 五套配色：默认极简白，另可选青竹绿、学院蓝、暖砂金、海棠红，刷新后保留已有选择。
 - 阅读设置：标准、舒适、大字三档字号及黑体／宋体切换，刷新后保留。
 - 内部通讯：独立账号、私聊、新建工作群、真实消息同步、未读计数、聊天附件、置顶和记录导出。
 - 广播通知：通讯管理员发布与置顶，全体成员接收，独立已读标记。
@@ -89,6 +90,7 @@ npm run test:collaboration
 npm run build
 npx playwright install chromium
 npm run test:browser
+npm run test:interface
 npm run test:assistant:browser
 npm run test:collaboration:browser
 ```

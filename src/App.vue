@@ -1,12 +1,12 @@
 <template>
-  <div class="demo-shell">
+  <div class="demo-shell" :class="{ 'home-view': pane === 'overview' }">
     <aside class="sidebar">
-      <a class="brand" href="#overview"><span class="brand-mark"><el-icon><Collection /></el-icon></span><span><strong>学院资料归档</strong><small>COLLEGE ARCHIVE</small></span></a>
-      <div class="sidebar-label">数字工作空间 <span>DEMO</span></div>
+      <a class="brand" href="#overview"><span class="brand-mark"><el-icon><Collection /></el-icon></span><span><strong>学院资料归档</strong><small>学院工作空间</small></span></a>
+      <div class="sidebar-label">工作空间 <span>演示版</span></div>
       <nav aria-label="演示功能导航">
         <button v-for="item in navigation" :key="item.id" :class="{ active: pane === item.id }" :aria-current="pane === item.id ? 'page' : undefined" @click="navigate(item.id)"><el-icon><component :is="item.icon" /></el-icon>{{ item.label }}<span v-if="item.id === 'audit'" class="nav-count">{{ pending.length }}</span><span v-if="item.id === 'chat' && unreadChat" class="nav-count">{{ unreadChat }}</span><span v-if="item.id === 'broadcasts' && unreadBroadcast" class="nav-count">{{ unreadBroadcast }}</span></button>
       </nav>
-      <div class="sidebar-note"><span class="note-symbol">↗</span><strong>从成果，到积累。</strong><p>记录每一次建设<br />留存每一份价值</p><small>开放体验 / 01</small></div>
+      <div class="sidebar-storage"><div><span>本地归档空间</span><span>{{ (usedBytes / 1024 / 1024).toFixed(1) }} / 50 MB</span></div><progress :value="usedBytes" :max="MAX_TOTAL" aria-label="本地归档空间用量"></progress><small>资料保存在当前浏览器</small></div>
       <button class="reset-button" :disabled="busy || loading" @click="resetDemo"><el-icon><RefreshLeft /></el-icon>重置演示数据</button>
     </aside>
 
@@ -17,7 +17,7 @@
           <ReadingSettings />
           <el-popover trigger="click" :width="272" placement="bottom-end">
             <template #reference><el-button :icon="Brush" aria-label="切换界面主题">换肤</el-button></template>
-            <div class="theme-heading">选一个喜欢的颜色<small>自动记住本浏览器的选择</small></div>
+            <div class="theme-heading">界面配色<small>自动记住本浏览器的选择</small></div>
             <div class="theme-grid"><button v-for="theme in themes" :key="theme.id" :aria-pressed="selectedTheme.id === theme.id" @click="selectTheme(theme)"><i :style="{ background: theme.color }"></i>{{ theme.name }}<span v-if="selectedTheme.id === theme.id">✓</span></button></div>
           </el-popover>
           <el-select v-model="role" aria-label="切换演示角色" class="role-select" :disabled="busy"><el-option label="教师体验" value="teacher" /><el-option label="管理员体验" value="admin" /></el-select>
@@ -29,30 +29,23 @@
       <main v-loading="loading" class="main-content">
         <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button @click="initialize">重新加载</el-button></el-alert>
         <template v-else>
-          <template v-if="pane === 'overview'">
-            <section class="welcome-panel">
-              <div class="welcome-copy"><div class="overline">BUILD · RECORD · GROW</div><h1>把每一份成果，<br />归档成积累。</h1><p>一个更清晰的学院工作空间。<br class="mobile-break" />从资料采集到协同审核，让建设过程有迹可循。</p><div class="hero-actions"><el-button type="primary" :icon="UploadFilled" :disabled="loading || !!loadError" @click="openUpload()">上传第一份资料</el-button><button class="text-action" @click="navigate('tasks')">查看限时任务 <span>↗</span></button></div></div>
-              <div class="paper-illustration" aria-hidden="true"><div class="paper paper-back"></div><div class="paper paper-front"><div class="paper-top">ARCHIVE <span>01 / 04</span></div><el-icon class="paper-icon"><Collection /></el-icon><strong>建设有记录<br />成果有归属</strong><i></i><i></i><i></i><div class="paper-seal">已归档<br /><span>RECORDED</span></div></div><div class="orbit-label">每一份，都值得留存。</div></div>
-            </section>
-            <section class="metrics" aria-label="归档概览"><article><span>资料总数</span><strong>{{ files.length }}<small>份</small></strong><p>当前浏览器的归档记录</p></article><article><span>等待审核</span><strong>{{ pending.length }}<small>份</small></strong><p>切换管理员可体验审核</p></article><article><span>已通过审核</span><strong>{{ approvedCount }}<small>份</small></strong><p>建设过程有据可查</p></article><article><span>本地存储用量</span><strong>{{ (usedBytes / 1024 / 1024).toFixed(1) }}<small>MB</small></strong><p>演示上限 50 MB</p></article></section>
-            <div class="overview-grid"><section class="panel getting-started"><div class="section-title"><div><div class="overline">A QUICK TOUR</div><h2>三步，体验完整流程</h2></div><span class="section-number">01—03</span></div><button @click="openUpload()"><b>01</b><span><strong>采集资料</strong><small>选择文件，或直接打开摄像头拍照</small></span><el-icon><ArrowRight /></el-icon></button><button @click="navigate('archives')"><b>02</b><span><strong>整理归档</strong><small>搜索、预览、下载，查看每份资料的状态</small></span><el-icon><ArrowRight /></el-icon></button><button @click="role = 'admin'; navigate('audit')"><b>03</b><span><strong>体验审核</strong><small>切换管理员，处理待审核的演示资料</small></span><el-icon><ArrowRight /></el-icon></button></section><section class="panel task-brief"><div class="section-title"><div><div class="overline">UP NEXT</div><h2>近期归档任务</h2></div><el-icon><Calendar /></el-icon></div><span class="task-category">教学建设</span><h3>教学成果与课程建设材料</h3><p>整理本学期课程建设成果，提交图片、文档或现场拍摄的材料。</p><div class="task-brief-footer"><span>距截止 {{ daysLeft(tasks[0].deadline) }} 天</span><el-button link type="primary" @click="navigate('tasks')">查看任务 →</el-button></div></section></div>
-          </template>
+          <OverviewHome v-if="pane === 'overview'" :files="files" :pending="pending.length" :approved="approvedCount" :used-bytes="usedBytes" :tasks="tasks" :now="now" :unread-chat="unreadChat" :unread-broadcast="unreadBroadcast" :disabled="loading || busy || !!loadError" @upload="openUpload" @navigate="navigate" @preview="previewFile" />
 
           <template v-else-if="pane === 'tasks'">
-            <div class="page-heading"><div><div class="overline">SUBMISSION DESK</div><h1>限时资料提交</h1><p>将成果放进对应任务，让归档更有条理。</p></div><span class="page-count">{{ tasks.length }} 项演示任务</span></div>
+            <div class="page-heading"><div><h1>限时资料提交</h1><p>查看截止时间，按任务提交资料。</p></div><span class="page-count">{{ tasks.length }} 项演示任务</span></div>
             <div class="task-cards"><article v-for="task in tasks" :key="task.id" class="task-card"><div class="task-card-top"><span class="task-category">{{ task.category }}</span><el-tag :type="task.deadline > now ? 'success' : 'info'" effect="plain">{{ task.deadline > now ? '进行中' : '已截止' }}</el-tag></div><h2>{{ task.title }}</h2><p>{{ task.description }}</p><div class="task-meta"><span>截止时间</span><strong>{{ dateLabel(task.deadline) }}</strong></div><div class="task-card-bottom"><span>{{ submittedCount(task.id) ? `已提交 ${submittedCount(task.id)} 份` : '等待你的第一份资料' }}</span><el-button type="primary" :disabled="task.deadline <= now || busy" @click="openUpload(task.id)">{{ task.deadline <= now ? '提交已截止' : submittedCount(task.id) ? '补充资料' : '提交资料' }}</el-button></div></article></div>
           </template>
 
           <template v-else-if="!['assistant', 'chat', 'broadcasts'].includes(pane)">
-            <div class="page-heading"><div><div class="overline">{{ pane === 'audit' ? 'REVIEW CENTER' : 'YOUR COLLECTION' }}</div><h1>{{ pane === 'audit' ? '资料审核' : '资料归档中心' }}</h1><p>{{ pane === 'audit' ? '正在以演示管理员身份操作，审核结果仅影响本浏览器。' : '把零散资料整理为可查阅、可追溯的成果记录。' }}</p></div><el-button v-if="pane === 'archives'" type="primary" :icon="Plus" :disabled="busy" @click="openUpload()">上传资料</el-button><span v-else class="page-count">{{ pending.length }} 份待审核</span></div>
+            <div class="page-heading"><div><h1>{{ pane === 'audit' ? '资料审核' : '资料归档中心' }}</h1><p>{{ pane === 'audit' ? '正在以演示管理员身份操作，审核结果仅影响本浏览器。' : '查找、预览与管理已归档的资料。' }}</p></div><el-button v-if="pane === 'archives'" type="primary" :icon="Plus" :disabled="busy" @click="openUpload()">上传资料</el-button><span v-else class="page-count">{{ pending.length }} 份待审核</span></div>
             <section class="panel archive-panel"><div class="filters"><el-input v-model="keyword" :prefix-icon="Search" clearable placeholder="搜索文件名或备注" aria-label="搜索文件名或备注" /><el-select v-model="categoryFilter" clearable placeholder="全部分类" aria-label="按分类筛选"><el-option v-for="category in categories" :key="category" :label="category" :value="category" /></el-select><el-select v-if="pane === 'archives'" v-model="statusFilter" clearable placeholder="全部状态" aria-label="按审核状态筛选"><el-option v-for="(label, key) in statusText" :key="key" :label="label" :value="key" /></el-select><span class="filter-count">{{ filteredFiles.length }} 份资料</span></div>
               <el-table :data="filteredFiles" row-key="id" empty-text="没有符合条件的资料" class="archive-table"><el-table-column label="资料名称" min-width="260"><template #default="{ row }"><div class="file-title"><span class="file-symbol"><el-icon><Document /></el-icon></span><div><strong :title="row.name">{{ row.name }}</strong><small>{{ fileSize(row.size) }} · {{ row.sample ? '示例文件' : '本地试传' }}{{ row.taskId ? ' · 任务提交' : '' }}</small></div></div></template></el-table-column><el-table-column prop="category" label="分类" width="110" /><el-table-column label="审核状态" width="110"><template #default="{ row }"><el-tag :type="statusType[row.status as Status]" effect="light">{{ statusText[row.status as Status] }}</el-tag></template></el-table-column><el-table-column label="说明" min-width="190"><template #default="{ row }"><span class="file-remark">{{ row.status === 'REJECTED' ? row.rejectReason : row.remark || '—' }}</span></template></el-table-column><el-table-column label="归档时间" width="150"><template #default="{ row }">{{ dateLabel(row.createdAt) }}</template></el-table-column><el-table-column label="操作" :width="pane === 'audit' ? 205 : 195"><template #default="{ row }"><el-button link type="primary" @click="previewFile(row)">预览</el-button><template v-if="pane === 'audit'"><el-button link type="success" :disabled="busy" @click="review(row, 'APPROVED')">通过</el-button><el-button link type="danger" :disabled="busy" @click="review(row, 'REJECTED')">驳回</el-button></template><template v-else><el-button link type="primary" @click="downloadFile(row)">下载</el-button><el-button link type="danger" :disabled="busy" @click="remove(row)">删除</el-button></template></template></el-table-column></el-table>
-              <div class="table-foot"><span>文件保存在本浏览器中，可在页面左下角重置。</span><span>LOCAL ARCHIVE</span></div>
+              <div class="table-foot"><span>文件保存在本浏览器中，可在页面左下角重置。</span><span>共 {{ filteredFiles.length }} 份资料</span></div>
             </section>
           </template>
           <AiAssistant v-show="pane === 'assistant'" :key="assistantVersion" :active="pane === 'assistant'" :files="files" @navigate="navigate" @draft="useAssistantDraft" />
           <CollaborationWorkspace v-show="['chat', 'broadcasts'].includes(pane)" :active="['chat', 'broadcasts'].includes(pane)" :pane="pane" />
-          <footer class="page-footer"><span>学院资料归档 <i>·</i> 独立演示项目</span><span>专注每一份建设成果</span></footer>
+          <footer class="page-footer"><span>学院资料归档 <i>·</i> 独立演示项目</span><span>归档 · 沟通 · 协作</span></footer>
         </template>
       </main>
     </div>
@@ -68,13 +61,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { ArrowRight, Bell, Brush, Calendar, ChatDotRound, Collection, Document, Files, House, Message, Plus, RefreshLeft, Search, Stamp, UploadFilled } from '@element-plus/icons-vue';
+import { Bell, Brush, Calendar, ChatDotRound, Collection, Document, Files, House, Message, Plus, RefreshLeft, Search, Stamp, UploadFilled } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadFile } from 'element-plus';
 import CameraCapture from './components/CameraCapture.vue';
 import AiAssistant from './components/AiAssistant.vue';
 import CollaborationWorkspace from './components/CollaborationWorkspace.vue';
 import ReadingSettings from './components/ReadingSettings.vue';
+import OverviewHome from './components/OverviewHome.vue';
 import { unreadChat, unreadBroadcast } from './collaboration';
 import { ACCEPT, MAX_TOTAL, allFiles, categories, dateLabel, deleteFile, fileError, fileSize, openDatabase, replaceFiles, saveFiles, seedFiles, statusText, statusType, wasSeeded } from './data';
 import type { Archive, Status } from './data';
@@ -109,7 +103,6 @@ const approvedCount = computed(() => files.value.filter(file => file.status === 
 const usedBytes = computed(() => files.value.reduce((sum, file) => sum + file.size, 0));
 const filteredFiles = computed(() => (pane.value === 'audit' ? pending.value : files.value).filter(file => (!keyword.value.trim() || (file.name + file.remark).toLowerCase().includes(keyword.value.trim().toLowerCase())) && (!categoryFilter.value || file.category === categoryFilter.value) && (pane.value === 'audit' || !statusFilter.value || file.status === statusFilter.value)));
 const submittedCount = (id: number) => files.value.filter(file => file.taskId === id && file.status !== 'REJECTED').length;
-const daysLeft = (deadline: number) => Math.max(0, Math.ceil((deadline - now.value) / day));
 const selectTheme = (theme: typeof themes[number]) => { selectedTheme.value = theme; applyTheme(theme); };
 const navigate = (next: Pane) => { if (!busy.value) location.hash = next; };
 function syncRoute() {
