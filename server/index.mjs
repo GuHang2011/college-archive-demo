@@ -6,7 +6,7 @@ import { authorize, complete, configFromEnv, HttpError, validatePayload } from '
 import { createCollaboration } from './collaboration.mjs';
 
 const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist');
-const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
+const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
 export function createServer(config = configFromEnv(), fetchImpl = fetch, collaboration) {
   let active = 0, windowStart = Date.now(), calls = 0;
   return http.createServer(async (req, res) => {

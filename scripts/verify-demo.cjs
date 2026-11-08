@@ -7,7 +7,7 @@ const { chromium } = require('@playwright/test');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'test-results');
 const basePath = '/college-archive-demo/';
-const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
+const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
 
 (async () => {
   fs.mkdirSync(output, { recursive: true });

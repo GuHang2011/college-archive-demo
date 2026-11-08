@@ -2,7 +2,7 @@
   <section class="collaboration-page" :aria-label="pane === 'chat' ? '内部通讯工作区' : '广播通知工作区'">
     <div class="page-heading"><div><h1>{{ pane === 'chat' ? '内部通讯' : '广播通知' }}</h1><p>{{ pane === 'chat' ? '与同事交流，发送文件与工作资料。' : '查看全院通知与工作安排。' }}</p></div><div v-if="state" class="collab-account"><span>{{ state.user.name }}<small>{{ status === 'connected' ? '实时同步中' : '正在重连' }}</small></span><el-button :disabled="busy" @click="logout">退出通讯</el-button></div></div>
     <div v-if="!state" class="collab-login panel">
-      <div class="collab-login-copy"><span class="collab-symbol"><el-icon><ChatDotRound /></el-icon></span><h2>登录后开始交流</h2><p>使用独立通讯账号登录，在不同浏览器或设备间交流。消息、广播与附件保存在通讯服务器。</p><ul><li>私聊与多人工作群</li><li>附件传输、未读提醒与消息置顶</li><li>管理员广播与已读标记</li></ul><small>通讯权限由登录账号决定，与右上角的演示角色无关。</small></div>
+      <div class="collab-login-copy"><PhotoGallery featured @preview="emit('photo', $event)" /><h2>学院工作通讯</h2><p>使用独立通讯账号登录，在不同浏览器或设备间交流。消息、广播与附件保存在通讯服务器。</p><ul><li>私聊与多人工作群</li><li>附件传输、未读提醒与消息置顶</li><li>管理员广播与已读标记</li></ul><small>通讯权限由登录账号决定，与右上角的演示角色无关。</small></div>
       <form class="collab-login-form" @submit.prevent="login"><h3>登录内部通讯</h3><label>通讯服务地址<input v-model="address" type="url" required placeholder="https://team.example.com" :disabled="busy" /></label><label>通讯账号<input v-model="username" autocomplete="username" required maxlength="40" placeholder="例如 teacher1" :disabled="busy" /></label><label>通讯密码<input v-model="password" type="password" autocomplete="current-password" required maxlength="128" :disabled="busy" /></label><p v-if="error || connectionError" class="collab-error" role="alert">{{ error || connectionError }}</p><el-button type="primary" native-type="submit" :loading="busy">登录并连接</el-button><p class="collab-hint">首次使用由管理员提供账号与服务地址。登录状态只保留在当前页面，刷新后需重新登录。</p></form>
     </div>
     <template v-else>
@@ -32,6 +32,9 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { fileSize } from '../data';
 import { collabApi, collabError as connectionError, collabState as state, collabStatus as status, collabVersion, defaultCollabBase, downloadAttachment, loginCollaboration, logoutCollaboration, refreshCollaboration, uploadAttachment, type Attachment, type Broadcast, type ChatMessage, type Room } from '../collaboration';
 import '../collaboration.css';
+import PhotoGallery from './PhotoGallery.vue';
+import type { Photo } from '../photos';
+const emit = defineEmits<{ (e: 'photo', photo: Photo): void }>();
 const props = defineProps<{ pane: string; active: boolean }>();
 const address = ref(defaultCollabBase()), username = ref(''), password = ref(''), error = ref(''), busy = ref(false);
 const search = ref(''), listTab = ref('rooms'), selected = ref(''), messages = ref<ChatMessage[]>([]), pins = ref<ChatMessage[]>([]), hasMore = ref(false), loadingMessages = ref(false);

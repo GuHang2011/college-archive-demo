@@ -1,9 +1,9 @@
 <template>
   <div class="home-overview">
-    <header class="home-heading">
+    <div class="home-opening"><header class="home-heading">
       <div><p class="home-date">{{ today }}</p><h1>工作台</h1><p class="home-description">查看归档状态、待办任务和团队消息。</p></div>
       <div class="home-actions"><el-button :icon="FolderOpened" @click="emit('navigate', 'archives')">浏览归档</el-button><el-button type="primary" :icon="Plus" :disabled="disabled" @click="emit('upload')">上传资料</el-button></div>
-    </header>
+    </header><PhotoGallery @preview="emit('photo', $event)" /></div>
     <dl class="home-summary" aria-label="归档概览">
       <div><dt><el-icon><Files /></el-icon>归档资料</dt><dd>{{ files.length }}<small>份资料</small></dd></div>
       <div><dt><el-icon><Clock /></el-icon>等待审核</dt><dd>{{ pending }}<small>份待处理</small></dd></div>
@@ -17,7 +17,7 @@
         <div v-if="recent.length" class="recent-files">
           <div class="recent-columns" aria-hidden="true"><span>资料名称</span><span>状态</span></div>
           <button v-for="file in recent" :key="file.id" class="recent-file" :aria-label="`预览 ${file.name}`" @click="emit('preview', file)">
-            <span class="recent-file-icon" :data-category="file.category"><el-icon><Document /></el-icon></span>
+            <ArchiveThumbnail class="recent-file-icon" :data-category="file.category" :blob="file.blob" />
             <span class="recent-file-name"><strong :title="file.name">{{ file.name }}</strong><small>{{ file.category }}<i>·</i>{{ dateLabel(file.createdAt) }}<i>·</i>{{ fileSize(file.size) }}</small></span>
             <span class="recent-file-status" :class="file.status.toLowerCase()"><i></i>{{ statusText[file.status] }}</span><el-icon class="recent-file-arrow"><ArrowRight /></el-icon>
           </button>
@@ -48,12 +48,15 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { ArrowRight, Bell, Calendar, ChatDotRound, CircleCheck, Clock, Coin, Document, EditPen, Files, FolderOpened, Plus } from '@element-plus/icons-vue';
+import { ArrowRight, Bell, Calendar, ChatDotRound, CircleCheck, Clock, Coin, EditPen, Files, FolderOpened, Plus } from '@element-plus/icons-vue';
 import { dateLabel, fileSize, statusText, type Archive } from '../data';
+import ArchiveThumbnail from './ArchiveThumbnail.vue';
+import PhotoGallery from './PhotoGallery.vue';
+import type { Photo } from '../photos';
 import '../home.css';
 type Destination = 'archives' | 'tasks' | 'chat' | 'broadcasts' | 'assistant';
 const props = defineProps<{ files: Archive[]; pending: number; approved: number; usedBytes: number; now: number; tasks: { id: number; title: string; category: string; deadline: number }[]; unreadChat: number; unreadBroadcast: number; disabled: boolean }>();
-const emit = defineEmits<{ (e: 'upload', taskId?: number): void; (e: 'navigate', destination: Destination): void; (e: 'preview', file: Archive): void }>();
+const emit = defineEmits<{ (e: 'upload', taskId?: number): void; (e: 'navigate', destination: Destination): void; (e: 'preview', file: Archive): void; (e: 'photo', photo: Photo): void }>();
 const pendingOnly = ref(false);
 const recent = computed(() => (pendingOnly.value ? props.files.filter(file => file.status === 'PENDING') : props.files).slice(0, 5));
 const upcoming = computed(() => props.tasks.filter(task => task.deadline > props.now).sort((a, b) => a.deadline - b.deadline).slice(0, 2));

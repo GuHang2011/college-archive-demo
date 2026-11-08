@@ -32,7 +32,7 @@
       <main v-loading="loading" class="main-content">
         <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button @click="initialize">重新加载</el-button></el-alert>
         <template v-else>
-          <OverviewHome v-if="pane === 'overview'" :files="files" :pending="pending.length" :approved="approvedCount" :used-bytes="usedBytes" :tasks="tasks" :now="now" :unread-chat="unreadChat" :unread-broadcast="unreadBroadcast" :disabled="loading || busy || !!loadError" @upload="openUpload" @navigate="navigate" @preview="previewFile" />
+          <OverviewHome v-if="pane === 'overview'" :files="files" :pending="pending.length" :approved="approvedCount" :used-bytes="usedBytes" :tasks="tasks" :now="now" :unread-chat="unreadChat" :unread-broadcast="unreadBroadcast" :disabled="loading || busy || !!loadError" @upload="openUpload" @navigate="navigate" @preview="previewFile" @photo="openPhoto" />
 
           <template v-else-if="pane === 'tasks'">
             <div class="page-heading"><div><h1>限时资料提交</h1><p>查看截止时间，按任务提交资料。</p></div><span class="page-count">{{ tasks.length }} 项演示任务</span></div>
@@ -42,17 +42,23 @@
           <template v-else-if="!['assistant', 'chat', 'broadcasts'].includes(pane)">
             <div class="page-heading"><div><h1>{{ pane === 'audit' ? '资料审核' : '资料归档中心' }}</h1><p>{{ pane === 'audit' ? '正在以演示管理员身份操作，审核结果仅影响本浏览器。' : '查找、预览与管理已归档的资料。' }}</p></div><el-button v-if="pane === 'archives'" type="primary" :icon="Plus" :disabled="busy" @click="openUpload()">上传资料</el-button><span v-else class="page-count">{{ pending.length }} 份待审核</span></div>
             <section class="panel archive-panel"><div class="filters"><el-input v-model="keyword" :prefix-icon="Search" clearable placeholder="搜索文件名或备注" aria-label="搜索文件名或备注" /><el-select v-model="categoryFilter" clearable placeholder="全部分类" aria-label="按分类筛选"><el-option v-for="category in categories" :key="category" :label="category" :value="category" /></el-select><el-select v-if="pane === 'archives'" v-model="statusFilter" clearable placeholder="全部状态" aria-label="按审核状态筛选"><el-option v-for="(label, key) in statusText" :key="key" :label="label" :value="key" /></el-select><span class="filter-count">{{ filteredFiles.length }} 份资料</span></div>
-              <el-table :data="filteredFiles" row-key="id" empty-text="没有符合条件的资料" class="archive-table"><el-table-column label="资料名称" min-width="260"><template #default="{ row }"><div class="file-title"><span class="file-symbol" :data-category="row.category"><el-icon><Document /></el-icon></span><div><strong :title="row.name">{{ row.name }}</strong><small>{{ fileSize(row.size) }} · {{ row.sample ? '示例文件' : '本地试传' }}{{ row.taskId ? ' · 任务提交' : '' }}</small></div></div></template></el-table-column><el-table-column prop="category" label="分类" width="110" /><el-table-column label="审核状态" width="110"><template #default="{ row }"><el-tag :type="statusType[row.status as Status]" effect="light">{{ statusText[row.status as Status] }}</el-tag></template></el-table-column><el-table-column label="说明" min-width="190"><template #default="{ row }"><span class="file-remark">{{ row.status === 'REJECTED' ? row.rejectReason : row.remark || '—' }}</span></template></el-table-column><el-table-column label="归档时间" width="150"><template #default="{ row }">{{ dateLabel(row.createdAt) }}</template></el-table-column><el-table-column label="操作" :width="pane === 'audit' ? 205 : 195"><template #default="{ row }"><el-button link type="primary" @click="previewFile(row)">预览</el-button><template v-if="pane === 'audit'"><el-button link type="success" :disabled="busy" @click="review(row, 'APPROVED')">通过</el-button><el-button link type="danger" :disabled="busy" @click="review(row, 'REJECTED')">驳回</el-button></template><template v-else><el-button link type="primary" @click="downloadFile(row)">下载</el-button><el-button link type="danger" :disabled="busy" @click="remove(row)">删除</el-button></template></template></el-table-column></el-table>
+              <el-table :data="filteredFiles" row-key="id" empty-text="没有符合条件的资料" class="archive-table"><el-table-column label="资料名称" min-width="260"><template #default="{ row }"><div class="file-title"><ArchiveThumbnail class="file-symbol" :data-category="row.category" :blob="row.blob" /><div><strong :title="row.name">{{ row.name }}</strong><small>{{ fileSize(row.size) }} · {{ row.sample ? '示例文件' : '本地试传' }}{{ row.taskId ? ' · 任务提交' : '' }}</small></div></div></template></el-table-column><el-table-column prop="category" label="分类" width="110" /><el-table-column label="审核状态" width="110"><template #default="{ row }"><el-tag :type="statusType[row.status as Status]" effect="light">{{ statusText[row.status as Status] }}</el-tag></template></el-table-column><el-table-column label="说明" min-width="190"><template #default="{ row }"><span class="file-remark">{{ row.status === 'REJECTED' ? row.rejectReason : row.remark || '—' }}</span></template></el-table-column><el-table-column label="归档时间" width="150"><template #default="{ row }">{{ dateLabel(row.createdAt) }}</template></el-table-column><el-table-column label="操作" :width="pane === 'audit' ? 205 : 195"><template #default="{ row }"><el-button link type="primary" @click="previewFile(row)">预览</el-button><template v-if="pane === 'audit'"><el-button link type="success" :disabled="busy" @click="review(row, 'APPROVED')">通过</el-button><el-button link type="danger" :disabled="busy" @click="review(row, 'REJECTED')">驳回</el-button></template><template v-else><el-button link type="primary" @click="downloadFile(row)">下载</el-button><el-button link type="danger" :disabled="busy" @click="remove(row)">删除</el-button></template></template></el-table-column></el-table>
               <div class="table-foot"><span>文件保存在本浏览器中，可在页面左下角重置。</span><span>共 {{ filteredFiles.length }} 份资料</span></div>
             </section>
           </template>
           <AiAssistant v-show="pane === 'assistant'" :key="assistantVersion" :active="pane === 'assistant'" :files="files" @navigate="navigate" @draft="useAssistantDraft" />
-          <CollaborationWorkspace v-show="['chat', 'broadcasts'].includes(pane)" :active="['chat', 'broadcasts'].includes(pane)" :pane="pane" />
-          <footer class="page-footer"><span>学院资料归档 <i>·</i> 独立演示项目</span><span>归档 · 沟通 · 协作</span></footer>
+          <CollaborationWorkspace v-show="['chat', 'broadcasts'].includes(pane)" :active="['chat', 'broadcasts'].includes(pane)" :pane="pane" @photo="openPhoto" />
+          <footer class="page-footer"><span>学院资料归档 <i>·</i> 独立演示项目</span><button class="photo-credits-button" @click="openPhoto()">摄影素材与来源</button></footer>
         </template>
       </main>
     </div>
 
+    <el-dialog v-model="photoVisible" :title="`摄影素材 · ${selectedPhoto.title}`" width="min(840px, 94vw)" class="photo-dialog">
+      <img class="photo-preview-image" :src="photoUrl(selectedPhoto)" :alt="selectedPhoto.alt" :width="selectedPhoto.width" :height="selectedPhoto.height" />
+      <div class="photo-preview-caption"><div><strong>摄影：{{ selectedPhoto.author }}</strong><a :href="selectedPhoto.source" target="_blank" rel="noopener noreferrer">原始作品 · Unsplash ↗</a><a href="https://unsplash.com/license" target="_blank" rel="noopener noreferrer">使用许可 ↗</a></div><p>真实摄影，来自 Unsplash，经 Lorem Picsum 获取。仅用于界面场景参考，不代表本学院的活动、场所或业务档案。</p></div>
+      <div class="photo-preview-selector" role="group" aria-label="选择摄影素材"><button v-for="photo in photos" :key="photo.id" :aria-pressed="selectedPhoto.id === photo.id" @click="selectedPhoto = photo"><img :src="photoUrl(photo, true)" alt="" />{{ photo.title }}</button></div>
+      <template #footer><el-button @click="photoVisible = false">关闭</el-button></template>
+    </el-dialog>
     <el-dialog v-model="uploadVisible" :title="selectedTask ? `提交任务：${selectedTask.title}` : '上传归档资料'" width="min(660px, 94vw)" :close-on-click-modal="false" :before-close="closeUpload">
       <el-alert title="文件只保存到当前浏览器，不会上传服务器。" type="info" :closable="false" show-icon />
       <el-form label-position="top" class="upload-form"><div class="upload-form-grid"><el-form-item label="资料分类"><el-select v-model="uploadCategory" :disabled="!!selectedTask || busy" aria-label="资料分类"><el-option v-for="category in categories" :key="category" :label="category" :value="category" /></el-select></el-form-item><el-form-item label="归档备注"><el-input v-model="remark" :disabled="busy" placeholder="选填，例如：本学期教学成果" maxlength="300" /></el-form-item></div><el-upload :key="uploadKey" drag multiple :auto-upload="false" :show-file-list="false" :accept="ACCEPT" :on-change="onFileChange" :disabled="busy"><el-icon class="upload-symbol"><UploadFilled /></el-icon><div>将文件拖到这里，或 <em>点击选择</em></div><small>Office、PDF、图片和 ZIP · 单文件 20 MB · 每次最多 20 个</small></el-upload><CameraCapture :active="uploadVisible" :disabled="busy || queue.length >= 20" @capture="onFileChange" /><div v-if="queue.length" class="queue"><div v-for="(file, i) in queue" :key="i" class="queue-item"><span><strong>{{ file.name }}</strong><small>{{ fileSize(file.size) }}</small></span><el-button link type="danger" :disabled="busy" :aria-label="`移除 ${file.name}`" @click="queue.splice(i, 1)">移除</el-button></div></div></el-form>
@@ -64,7 +70,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Bell, Brush, Calendar, ChatDotRound, Collection, Document, Files, House, Message, Plus, RefreshLeft, Search, Stamp, UploadFilled } from '@element-plus/icons-vue';
+import { Bell, Brush, Calendar, ChatDotRound, Collection, Files, House, Message, Plus, RefreshLeft, Search, Stamp, UploadFilled } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadFile } from 'element-plus';
 import CameraCapture from './components/CameraCapture.vue';
@@ -72,6 +78,8 @@ import AiAssistant from './components/AiAssistant.vue';
 import CollaborationWorkspace from './components/CollaborationWorkspace.vue';
 import ReadingSettings from './components/ReadingSettings.vue';
 import OverviewHome from './components/OverviewHome.vue';
+import ArchiveThumbnail from './components/ArchiveThumbnail.vue';
+import { photos, photoUrl, type Photo } from './photos';
 import { unreadChat, unreadBroadcast } from './collaboration';
 import { ACCEPT, MAX_TOTAL, allFiles, categories, dateLabel, deleteFile, fileError, fileSize, openDatabase, replaceFiles, saveFiles, seedFiles, statusText, statusType, wasSeeded } from './data';
 import type { Archive, Status } from './data';
@@ -87,6 +95,8 @@ const files = ref<Archive[]>([]), loading = ref(true), busy = ref(false), loadEr
 const keyword = ref(''), categoryFilter = ref(''), statusFilter = ref('');
 const uploadVisible = ref(false), uploadCategory = ref(categories[0]), remark = ref(''), queue = ref<File[]>([]), uploadKey = ref(0), taskId = ref<number>();
 const previewVisible = ref(false), previewUrl = ref(''), previewRecord = ref<Archive>();
+const photoVisible = ref(false), selectedPhoto = ref<Photo>(photos[0]);
+function openPhoto(photo: Photo = photos[0]) { selectedPhoto.value = photo; photoVisible.value = true; }
 const now = ref(Date.now());
 const day = 86400000;
 const tasks = [
@@ -115,7 +125,7 @@ const navigate = (next: Pane) => { if (!busy.value) location.hash = next; };
 function syncRoute() {
   const requested = location.hash.slice(1) as Pane;
   pane.value = navigation.value.some(item => item.id === requested) ? requested : 'overview';
-  uploadVisible.value = false; previewVisible.value = false; keyword.value = ''; categoryFilter.value = ''; statusFilter.value = '';
+  uploadVisible.value = false; previewVisible.value = false; photoVisible.value = false; keyword.value = ''; categoryFilter.value = ''; statusFilter.value = '';
 }
 watch(role, () => { if (role.value !== 'admin' && pane.value === 'audit') navigate('overview'); });
 async function initialize() {
