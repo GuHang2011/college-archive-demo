@@ -1,6 +1,6 @@
 /* Shared visual language: compact workspaces, readable typography, purposeful accents. */
 :root {
-  --accent: #4d5fb1; --accent-pale: #eef0fa; --rail: #1d1d1f; --canvas: #f5f5f7;
+  --accent: #3d5c78; --accent-pale: #edf2f6; --rail: #25333f; --canvas: #f5f5f7;
   --ink: #252831; --muted: #6c7280; --line: #e3e6eb;
   --reader-scale: 1; --reader-font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
   --el-font-size-base: calc(16px * var(--reader-scale)); --el-border-radius-base: 6px;
