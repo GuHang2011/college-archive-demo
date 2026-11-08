@@ -1,7 +1,7 @@
 <template>
   <section class="assistant-page" aria-label="AI 助手工作区">
     <div class="page-heading assistant-heading">
-      <div><h1>AI 助手</h1><p>整理归档清单，起草说明，查询操作方法。</p></div>
+      <div><h1>AI 助手</h1><p>查询归档规则，起草说明，整理待办。</p></div>
       <el-button :icon="Connection" :disabled="sending" @click="showConnection">{{ online ? '连接设置' : '连接 AI' }}</el-button>
     </div>
     <div class="assistant-layout">
@@ -14,7 +14,7 @@
       <div class="assistant-chat">
         <div class="assistant-chat-top"><span>{{ online ? '与 AI 对话' : '本地操作与模板指引' }}</span><el-button link :disabled="sending || !messages.length" @click="clearMessages">清空对话</el-button></div>
         <div ref="messageList" class="assistant-messages" role="log" aria-label="助手对话记录" aria-live="polite" :aria-busy="sending">
-          <div v-if="!messages.length" class="assistant-welcome"><span>需要处理什么资料？</span><p>{{ online ? '输入问题，或选择常用问题开始。' : '尚未连接 AI。你可以先使用本地指引和说明模板，连接服务后再进行自由问答。' }}</p><div class="assistant-note">生成的内容可修改，提交前请核对。</div></div>
+          <div v-if="!messages.length" class="assistant-welcome"><span>选择一项操作开始</span><p>{{ online ? '输入问题，或选择常用问题开始。' : '尚未连接 AI。可先使用本地指引和说明模板，连接服务后再进行问答。' }}</p><div class="assistant-note">内容可以修改，提交前请核对。</div></div>
           <article v-for="message in messages" :key="message.id" class="assistant-message" :class="message.role">
             <div class="message-byline">{{ message.role === 'user' ? '你' : message.source }}<span v-if="message.failed"> · 未完成</span></div>
             <div class="message-content">{{ message.content }}</div>

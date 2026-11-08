@@ -1,7 +1,7 @@
 <template>
   <div class="home-overview">
     <header class="home-heading">
-      <div><p class="home-date">{{ today }}</p><h1>工作台</h1><p class="home-description">查看归档进度，继续手头的工作。</p></div>
+      <div><p class="home-date">{{ today }}</p><h1>工作台</h1><p class="home-description">查看归档状态、待办任务和团队消息。</p></div>
       <div class="home-actions"><el-button :icon="FolderOpened" @click="emit('navigate', 'archives')">浏览归档</el-button><el-button type="primary" :icon="Plus" :disabled="disabled" @click="emit('upload')">上传资料</el-button></div>
     </header>
     <dl class="home-summary" aria-label="归档概览">
@@ -41,7 +41,7 @@
       <div class="home-shortcuts">
         <button class="home-shortcut" data-section="chat" @click="emit('navigate', 'chat')"><span class="shortcut-symbol"><el-icon><ChatDotRound /></el-icon></span><span><strong>内部通讯 <b v-if="unreadChat">{{ unreadChat }}</b></strong><small>联系同事，分享工作资料</small></span><el-icon><ArrowRight /></el-icon></button>
         <button class="home-shortcut" data-section="broadcasts" @click="emit('navigate', 'broadcasts')"><span class="shortcut-symbol"><el-icon><Bell /></el-icon></span><span><strong>广播通知 <b v-if="unreadBroadcast">{{ unreadBroadcast }}</b></strong><small>查看学院通知与置顶消息</small></span><el-icon><ArrowRight /></el-icon></button>
-        <button class="home-shortcut" data-section="assistant" @click="emit('navigate', 'assistant')"><span class="shortcut-symbol"><el-icon><EditPen /></el-icon></span><span><strong>AI 助手</strong><small>整理资料清单，起草说明</small></span><el-icon><ArrowRight /></el-icon></button>
+        <button class="home-shortcut" data-section="assistant" @click="emit('navigate', 'assistant')"><span class="shortcut-symbol"><el-icon><EditPen /></el-icon></span><span><strong>AI 助手</strong><small>查询规则，起草归档说明</small></span><el-icon><ArrowRight /></el-icon></button>
       </div>
     </section>
   </div>
