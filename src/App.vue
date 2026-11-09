@@ -2,6 +2,7 @@
   <div class="demo-shell" :class="{ 'home-view': pane === 'overview', 'work-view': !isLoginView }">
     <aside class="sidebar">
       <a class="brand" href="#overview"><span class="brand-mark"><el-icon><Collection /></el-icon></span><span><strong>学院资料归档</strong><small>学院工作空间</small></span></a>
+      <QuickFind v-if="!isLoginView" :files="files" :navigation="navigation" :active="!isLoginView" :disabled="busy || loading || uploadVisible || previewVisible || photoVisible || detailsVisible" @navigate="navigate($event as Pane)" @detail="openDetail" />
       <div class="sidebar-label">工作空间 <span>演示版</span></div>
       <nav aria-label="演示功能导航">
         <template v-for="item in navigation" :key="item.id">
@@ -35,24 +36,19 @@
           <OverviewHome v-if="pane === 'overview'" :files="files" :pending="pending.length" :approved="approvedCount" :used-bytes="usedBytes" :tasks="tasks" :now="now" :unread-chat="unreadChat" :unread-broadcast="unreadBroadcast" :disabled="loading || busy || !!loadError" @upload="openUpload" @navigate="navigate" @preview="previewFile" @photo="openPhoto" />
 
           <template v-else-if="pane === 'tasks'">
-            <div class="page-heading"><div><h1>限时任务</h1></div><span class="page-count">{{ tasks.filter(task => task.deadline > now).length }} 项进行中 · {{ tasks.filter(task => task.deadline <= now).length }} 项已截止</span></div>
+            <div class="page-heading"><div><p class="workspace-eyebrow">资料管理</p><h1>限时任务<span class="heading-total">{{ tasks.length }}</span></h1></div><span class="page-count">截止时间临近的任务优先</span></div>
             <div class="task-cards">
+              <div class="workspace-tabs" role="group" aria-label="任务状态视图"><button :aria-pressed="taskFilter === 'all'" @click="taskFilter = 'all'">全部任务<span>{{ tasks.length }}</span></button><button :aria-pressed="taskFilter === 'active'" @click="taskFilter = 'active'">进行中<span>{{ tasks.filter(task => task.deadline > now).length }}</span></button><button :aria-pressed="taskFilter === 'closed'" @click="taskFilter = 'closed'">已截止<span>{{ tasks.filter(task => task.deadline <= now).length }}</span></button></div>
               <div class="task-list-head" aria-hidden="true"><span>任务</span><span>截止时间</span><span>提交情况</span></div>
-              <article v-for="task in tasks" :key="task.id" class="task-card" :class="{ 'task-closed': task.deadline <= now }">
+              <article v-for="task in visibleTasks" :key="task.id" class="task-card" :class="{ 'task-closed': task.deadline <= now }">
                 <div class="task-details"><span class="task-category" :data-category="task.category">{{ task.category }}</span><h2>{{ task.title }}</h2><p>{{ task.description }}</p></div>
-                <div class="task-meta"><strong>{{ dateLabel(task.deadline) }}</strong><span class="task-state" :class="{ active: task.deadline > now }"><i></i>{{ task.deadline > now ? '进行中' : '已截止' }}</span></div>
+                <div class="task-meta"><strong>{{ dateLabel(task.deadline) }}</strong><span class="task-state" :class="{ active: task.deadline > now, soon: task.deadline > now && task.deadline - now <= 3 * day }"><i></i>{{ task.deadline > now ? `${Math.ceil((task.deadline - now) / day)} 天后截止` : '已截止' }}</span></div>
                 <div class="task-card-bottom"><span>{{ submittedCount(task.id) ? `已提交 ${submittedCount(task.id)} 份` : '尚未提交' }}</span><el-button :type="task.deadline > now ? 'primary' : 'default'" plain :disabled="task.deadline <= now || busy" @click="openUpload(task.id)">{{ task.deadline <= now ? '提交已截止' : submittedCount(task.id) ? '补充资料' : '提交资料' }}</el-button></div>
               </article>
             </div>
           </template>
 
-          <template v-else-if="!['assistant', 'chat', 'broadcasts'].includes(pane)">
-            <div class="page-heading"><div><h1>{{ pane === 'audit' ? '资料审核' : '资料归档' }}</h1></div><el-button v-if="pane === 'archives'" type="primary" :icon="Plus" :disabled="busy" @click="openUpload()">上传资料</el-button><span v-else class="page-count">{{ pending.length }} 份待审核 · 演示管理员</span></div>
-            <section class="panel archive-panel"><div class="filters"><el-input v-model="keyword" :prefix-icon="Search" clearable placeholder="搜索文件名或备注" aria-label="搜索文件名或备注" /><el-select v-model="categoryFilter" clearable placeholder="全部分类" aria-label="按分类筛选"><el-option v-for="category in categories" :key="category" :label="category" :value="category" /></el-select><el-select v-if="pane === 'archives'" v-model="statusFilter" clearable placeholder="全部状态" aria-label="按审核状态筛选"><el-option v-for="(label, key) in statusText" :key="key" :label="label" :value="key" /></el-select><span class="filter-count">{{ filteredFiles.length }} 份资料</span></div>
-              <el-table :data="filteredFiles" row-key="id" empty-text="没有符合条件的资料" class="archive-table"><el-table-column label="资料名称" min-width="260"><template #default="{ row }"><div class="file-title"><ArchiveThumbnail class="file-symbol" :data-category="row.category" :blob="row.blob" /><div><strong :title="row.name">{{ row.name }}</strong><small>{{ fileSize(row.size) }} · {{ row.sample ? '示例文件' : '本地试传' }}{{ row.taskId ? ' · 任务提交' : '' }}</small></div></div></template></el-table-column><el-table-column prop="category" label="分类" width="110" /><el-table-column label="审核状态" width="110"><template #default="{ row }"><el-tag :type="statusType[row.status as Status]" effect="light">{{ statusText[row.status as Status] }}</el-tag></template></el-table-column><el-table-column label="说明" min-width="190"><template #default="{ row }"><span class="file-remark">{{ row.status === 'REJECTED' ? row.rejectReason : row.remark || '—' }}</span></template></el-table-column><el-table-column label="归档时间" width="150"><template #default="{ row }">{{ dateLabel(row.createdAt) }}</template></el-table-column><el-table-column label="操作" :width="pane === 'audit' ? 205 : 195"><template #default="{ row }"><el-button link type="primary" @click="previewFile(row)">预览</el-button><template v-if="pane === 'audit'"><el-button link type="success" :disabled="busy" @click="review(row, 'APPROVED')">通过</el-button><el-button link type="danger" :disabled="busy" @click="review(row, 'REJECTED')">驳回</el-button></template><template v-else><el-button link type="primary" @click="downloadFile(row)">下载</el-button><el-button link type="danger" :disabled="busy" @click="remove(row)">删除</el-button></template></template></el-table-column></el-table>
-              <div class="table-foot"><span>{{ pane === 'audit' ? '审核结果仅影响当前浏览器的演示资料。' : '按归档时间排序' }}</span><span>共 {{ filteredFiles.length }} 份资料</span></div>
-            </section>
-          </template>
+          <ArchiveWorkspace v-else-if="pane === 'archives' || pane === 'audit'" :key="pane" :files="files" :audit="pane === 'audit'" :disabled="busy" @upload="openUpload()" @detail="openDetail" @preview="previewFile" @download="downloadFile" @remove="remove" @review="review" />
           <AiAssistant v-show="pane === 'assistant'" :key="assistantVersion" :active="pane === 'assistant'" :files="files" @navigate="navigate" @draft="useAssistantDraft" />
           <CollaborationWorkspace v-show="['chat', 'broadcasts'].includes(pane)" :active="['chat', 'broadcasts'].includes(pane)" :pane="pane" @photo="openPhoto" />
           <footer class="page-footer"><span v-if="isLoginView">学院资料归档 <i>·</i> 独立演示项目</span><span v-else>演示环境 <i>·</i> {{ ['chat', 'broadcasts'].includes(pane) ? '通讯与附件保存在已连接的服务端' : '归档资料保存在当前浏览器' }}</span><button class="photo-credits-button" @click="openPhoto()">摄影素材与来源</button></footer>
@@ -60,6 +56,7 @@
       </main>
     </div>
 
+    <FileDetails v-model:visible="detailsVisible" :file="detailFile" @preview="previewFile" @download="downloadFile" />
     <el-dialog v-model="photoVisible" :title="`摄影素材 · ${selectedPhoto.title}`" width="min(840px, 94vw)" class="photo-dialog">
       <img class="photo-preview-image" :src="photoUrl(selectedPhoto)" :alt="selectedPhoto.alt" :width="selectedPhoto.width" :height="selectedPhoto.height" />
       <div class="photo-preview-caption"><div><strong>摄影：{{ selectedPhoto.author }}</strong><a :href="selectedPhoto.source" target="_blank" rel="noopener noreferrer">原始作品 · Unsplash ↗</a><a href="https://unsplash.com/license" target="_blank" rel="noopener noreferrer">使用许可 ↗</a></div><p>真实摄影，来自 Unsplash，经 Lorem Picsum 获取。仅用于界面场景参考，不代表本学院的活动、场所或业务档案。</p></div>
@@ -77,7 +74,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Bell, Brush, Calendar, ChatDotRound, Collection, Files, House, Message, Plus, RefreshLeft, Search, Stamp, UploadFilled } from '@element-plus/icons-vue';
+import { Bell, Brush, Calendar, ChatDotRound, Collection, Files, House, Message, Plus, RefreshLeft, Stamp, UploadFilled } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadFile } from 'element-plus';
 import CameraCapture from './components/CameraCapture.vue';
@@ -85,10 +82,12 @@ import AiAssistant from './components/AiAssistant.vue';
 import CollaborationWorkspace from './components/CollaborationWorkspace.vue';
 import ReadingSettings from './components/ReadingSettings.vue';
 import OverviewHome from './components/OverviewHome.vue';
-import ArchiveThumbnail from './components/ArchiveThumbnail.vue';
+import ArchiveWorkspace from './components/ArchiveWorkspace.vue';
+import FileDetails from './components/FileDetails.vue';
+import QuickFind from './components/QuickFind.vue';
 import { photos, photoUrl, type Photo } from './photos';
 import { collabState, unreadChat, unreadBroadcast } from './collaboration';
-import { ACCEPT, MAX_TOTAL, allFiles, categories, dateLabel, deleteFile, fileError, fileSize, openDatabase, replaceFiles, saveFiles, seedFiles, statusText, statusType, wasSeeded } from './data';
+import { ACCEPT, MAX_TOTAL, allFiles, categories, dateLabel, deleteFile, fileError, fileSize, openDatabase, replaceFiles, saveFiles, seedFiles, wasSeeded } from './data';
 import type { Archive, Status } from './data';
 import { applyTheme, loadTheme, themes } from './theme';
 
@@ -100,7 +99,9 @@ const role = ref('teacher');
 const selectedTheme = ref(loadTheme());
 applyTheme(selectedTheme.value);
 const files = ref<Archive[]>([]), loading = ref(true), busy = ref(false), loadError = ref('');
-const keyword = ref(''), categoryFilter = ref(''), statusFilter = ref('');
+const detailId = ref(''), detailsVisible = ref(false);
+const detailFile = computed(() => files.value.find(file => file.id === detailId.value));
+function openDetail(file: Archive) { detailId.value = file.id; detailsVisible.value = true; }
 const uploadVisible = ref(false), uploadCategory = ref(categories[0]), remark = ref(''), queue = ref<File[]>([]), uploadKey = ref(0), taskId = ref<number>();
 const previewVisible = ref(false), previewUrl = ref(''), previewRecord = ref<Archive>();
 const photoVisible = ref(false), selectedPhoto = ref<Photo>(photos[0]);
@@ -112,6 +113,8 @@ const tasks = [
   { id: 2, title: '创新实践与学生成长记录', category: '学生工作', deadline: now.value + 3 * day, description: '提交学生竞赛、创新实践及志愿活动的阶段材料。' },
   { id: 3, title: '上一阶段社会服务总结', category: '社会服务', deadline: now.value - day, description: '社会服务阶段总结及相关证明材料。' },
 ];
+const taskFilter = ref<'all' | 'active' | 'closed'>('all');
+const visibleTasks = computed(() => tasks.filter(task => taskFilter.value === 'all' || (taskFilter.value === 'active' ? task.deadline > now.value : task.deadline <= now.value)).sort((a, b) => Number(a.deadline <= now.value) - Number(b.deadline <= now.value) || a.deadline - b.deadline));
 const navigation = computed(() => [
   { id: 'overview' as Pane, label: '工作台', icon: House },
   { id: 'archives' as Pane, label: '资料归档', icon: Files },
@@ -126,14 +129,14 @@ const selectedTask = computed(() => tasks.find(task => task.id === taskId.value)
 const pending = computed(() => files.value.filter(file => file.status === 'PENDING'));
 const approvedCount = computed(() => files.value.filter(file => file.status === 'APPROVED').length);
 const usedBytes = computed(() => files.value.reduce((sum, file) => sum + file.size, 0));
-const filteredFiles = computed(() => (pane.value === 'audit' ? pending.value : files.value).filter(file => (!keyword.value.trim() || (file.name + file.remark).toLowerCase().includes(keyword.value.trim().toLowerCase())) && (!categoryFilter.value || file.category === categoryFilter.value) && (pane.value === 'audit' || !statusFilter.value || file.status === statusFilter.value)));
+
 const submittedCount = (id: number) => files.value.filter(file => file.taskId === id && file.status !== 'REJECTED').length;
 const selectTheme = (theme: typeof themes[number]) => { selectedTheme.value = theme; applyTheme(theme); };
 const navigate = (next: Pane) => { if (!busy.value) location.hash = next; };
 function syncRoute() {
   const requested = location.hash.slice(1) as Pane;
   pane.value = navigation.value.some(item => item.id === requested) ? requested : 'overview';
-  uploadVisible.value = false; previewVisible.value = false; photoVisible.value = false; keyword.value = ''; categoryFilter.value = ''; statusFilter.value = '';
+  uploadVisible.value = false; previewVisible.value = false; photoVisible.value = false; detailsVisible.value = false;
 }
 watch(role, () => { if (role.value !== 'admin' && pane.value === 'audit') navigate('overview'); });
 async function initialize() {

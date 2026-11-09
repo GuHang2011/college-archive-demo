@@ -1,4 +1,4 @@
-// Exercises the built static site, without mocking application data or APIs.
+﻿// Exercises the built static site, without mocking application data or APIs.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -106,7 +106,7 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
       const box = page.getByRole('dialog', { name: '驳回资料', exact: true });
       await box.getByRole('button', { name: '确认驳回' }).click(); await page.getByText('请填写 1–200 字的驳回原因', { exact: true }).waitFor();
       await box.getByRole('textbox').fill('请补充活动说明'); await box.getByRole('button', { name: '确认驳回' }).click(); await awaitRows(2);
-      await go('资料归档'); await awaitRows(7); await page.getByText('请补充活动说明', { exact: true }).waitFor();
+      await go('资料归档'); await awaitRows(7); await page.locator('.archive-table').getByText('请补充活动说明', { exact: true }).waitFor();
     });
     await check('Mobile tasks support submissions and the expired task is disabled', async () => {
       await page.setViewportSize({ width: 390, height: 844 }); await go('限时任务');
@@ -142,3 +142,4 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
     process.exitCode = 1;
   } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
 })();
+

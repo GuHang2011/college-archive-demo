@@ -30,6 +30,8 @@
 
 当前版本采用 Linear + Notion 的工作空间方向：侧栏按资料管理、团队协作与辅助工具分组。工作台以最近归档和截止日程为主，统计压缩为一行，摄影参考可展开查看；归档页使用完整宽度的表格，任务按连续列表排列。登录后的通讯页减少重复标题，置顶操作支持鼠标悬停、键盘聚焦与触屏；广播按通知列表展示，助手采用文档式对话与紧凑的常用操作。登录页保留原有摄影与表单布局。正文与文件名保持 16px，常用按钮 15px，辅助说明主要为 13–14px，支持三档字号；分类和状态仍用蓝、绿、暖金等颜色区分。
 
+最新工作页参考 [Tabler 表格](https://preview.tabler.io/tables.html) 与 [Ant Design 数据展示规范](https://ant.design/docs/spec/data-display/)，使用白色内容区域、浅灰底色、固定操作列与清晰的状态标签。资料支持状态视图、分类和关键词组合筛选、四种排序、紧凑行距及每页 12 条分页；点击文件名打开详情侧栏查看备注和修改意见。Ctrl/⌘ + K 可查找功能及本地资料，支持方向键选择。任务按截止时间排列并提供状态筛选，广播可筛选未读与置顶。手机使用资料列表和横向导航，预览、下载与审核按钮直接可用。
+
 - [Linear](https://linear.app/)：参考导航组织、操作层级和紧凑列表。
 - [Notion Projects](https://www.notion.com/product/projects)：参考资料与任务的内容层级和属性排版。
 - [Slack Channels](https://slack.com/features/channels)：参考会话列表、消息区及输入区的功能划分。
@@ -103,6 +105,7 @@ npm run build
 npx playwright install chromium
 npm run test:browser
 npm run test:interface
+npm run test:workspace
 npm run test:photography
 npm run test:assistant:browser
 npm run test:collaboration:browser

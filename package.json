@@ -18,6 +18,7 @@
     "test:assistant:browser": "node scripts/verify-assistant.cjs",
     "test:browser": "node scripts/verify-demo.cjs",
     "test:interface": "node scripts/verify-interface.cjs",
+    "test:workspace": "node scripts/verify-workspace.cjs",
     "test:photography": "node scripts/verify-photography.cjs"
   },
   "dependencies": {
