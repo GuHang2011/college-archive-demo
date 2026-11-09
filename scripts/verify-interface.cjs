@@ -36,6 +36,12 @@ const { chromium } = require('@playwright/test');
         await page.getByRole('navigation').getByRole('button', { name: new RegExp('^' + label) }).click();
         await page.waitForFunction(({ route, label }) => location.hash === '#' + route && document.querySelector('nav button[aria-current="page"]')?.textContent.trim().startsWith(label), { route, label });
         await page.locator('main h1:visible').waitFor(); await checkWidth(`${width}/${route}`);
+        if (route === 'assistant') {
+          for (const title of ['整理归档清单', '起草材料说明', '检查审核要点', '如何拍照归档']) {
+            assert.ok(await page.locator('.assistant-presets button > span').getByText(title, { exact: false }).isVisible(), `${width}px: shortcut label ${title} must remain visible`);
+          }
+        }
+        await page.waitForFunction(() => [...document.querySelectorAll('main img')].filter(img => img.checkVisibility()).every(img => img.complete && img.naturalWidth > 0));
         if ([1440, 390].includes(width)) await page.screenshot({ path: path.join(output, `${width}-${route}.png`), fullPage: true, animations: 'disabled' });
       }
       checks.push(`${width}px: all seven routes fit the viewport`);

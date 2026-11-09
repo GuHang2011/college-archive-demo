@@ -21,20 +21,25 @@ const { chromium } = require('@playwright/test');
     page.on('response', response => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); if (response.url().includes('/photos/')) responses.push({ url: response.url(), type: response.headers()['content-type'] }); });
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.locator('.el-loading-mask').waitFor({ state: 'hidden' });
-    const gallery = page.locator('.home-opening .photo-gallery');
+    const gallery = page.locator('.home-reference .photo-gallery');
     assert.equal(await gallery.locator('.photo-tile').count(), 3);
-    await page.waitForFunction(() => [...document.querySelectorAll('.home-opening img, .recent-file-icon img')].every(img => img.complete && img.naturalWidth > 0));
+    await page.waitForFunction(() => [...document.querySelectorAll('.home-reference img, .recent-file-icon img')].every(img => img.complete && img.naturalWidth > 0));
     assert.equal(await page.locator('.recent-file-icon img').count(), 5);
     const sizes = [];
     for (const width of [1440, 1024, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       if (width === 1440 || width === 390) await page.screenshot({ path: path.join(output, `${width}-overview.png`), fullPage: true });
+      await page.locator('.home-reference summary').click();
+      await gallery.waitFor({ state: 'visible' });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `Expanded reference overflows at ${width}px`);
+      await page.locator('.home-reference summary').click();
       sizes.push(width);
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
     const titles = ['书页与文献', '阅读与整理', '桌面与记录'];
     const authors = ['Patrick Tomasso', 'Alejandro Escamilla', 'Galymzhan Abdugalimov'];
+    await page.locator('.home-reference summary').click();
     await gallery.getByRole('button', { name: '查看摄影素材：书页与文献' }).click();
     for (let i = 0; i < titles.length; i++) {
       const dialog = page.getByRole('dialog', { name: /^摄影素材/ });

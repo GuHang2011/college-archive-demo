@@ -1,14 +1,14 @@
-<template>
+﻿<template>
   <div class="home-overview">
-    <div class="home-opening"><header class="home-heading">
-      <div><p class="home-date">{{ today }}</p><h1>工作台</h1><p class="home-description">查看归档状态、待办任务和团队消息。</p></div>
+    <header class="home-heading">
+      <div class="home-title"><h1>工作台</h1><p class="home-date">{{ today }}</p></div>
       <div class="home-actions"><el-button :icon="FolderOpened" @click="emit('navigate', 'archives')">浏览归档</el-button><el-button type="primary" :icon="Plus" :disabled="disabled" @click="emit('upload')">上传资料</el-button></div>
-    </header><PhotoGallery @preview="emit('photo', $event)" /></div>
+    </header>
     <dl class="home-summary" aria-label="归档概览">
-      <div><dt><el-icon><Files /></el-icon>归档资料</dt><dd>{{ files.length }}<small>份资料</small></dd></div>
-      <div><dt><el-icon><Clock /></el-icon>等待审核</dt><dd>{{ pending }}<small>份待处理</small></dd></div>
-      <div><dt><el-icon><CircleCheck /></el-icon>已通过审核</dt><dd>{{ approved }}<small>份已完成</small></dd></div>
-      <div><dt><el-icon><Coin /></el-icon>本地存储</dt><dd>{{ (usedBytes / 1024 / 1024).toFixed(1) }}<small>/ 50 MB</small></dd></div>
+      <div><dt>归档资料</dt><dd>{{ files.length }}<small>份</small></dd></div>
+      <div class="summary-pending"><dt><i></i>待审核</dt><dd>{{ pending }}</dd></div>
+      <div class="summary-approved"><dt><i></i>已通过</dt><dd>{{ approved }}</dd></div>
+      <div><dt>已用空间</dt><dd>{{ (usedBytes / 1024 / 1024).toFixed(1) }}<small>MB / 50 MB</small></dd></div>
     </dl>
     <div class="home-columns">
       <section class="home-library" aria-labelledby="recent-title">
@@ -22,33 +22,33 @@
             <span class="recent-file-status" :class="file.status.toLowerCase()"><i></i>{{ statusText[file.status] }}</span><el-icon class="recent-file-arrow"><ArrowRight /></el-icon>
           </button>
         </div>
-        <div v-else class="home-empty"><el-icon><FolderOpened /></el-icon><h3>{{ pendingOnly ? '没有待审核的资料' : '还没有归档资料' }}</h3><p>{{ pendingOnly ? '提交新资料后，可以在这里跟进审核状态。' : '上传文档或拍摄照片，开始整理。' }}</p><button v-if="!pendingOnly" class="home-link" :disabled="disabled" @click="emit('upload')">上传资料 <el-icon><ArrowRight /></el-icon></button></div>
-        <p class="home-library-note">{{ pendingOnly ? '显示待审核资料，点击文件可预览。' : '按归档时间排序，点击文件可预览。' }}</p>
+        <div v-else class="home-empty"><el-icon><FolderOpened /></el-icon><h3>{{ pendingOnly ? '暂无待审核资料' : '暂无归档资料' }}</h3><button v-if="!pendingOnly" class="home-link" :disabled="disabled" @click="emit('upload')">上传资料 <el-icon><ArrowRight /></el-icon></button></div>
+        <p class="home-library-note">最近 {{ recent.length }} 份 · 按归档时间排序</p>
       </section>
-      <section class="home-tasks" aria-labelledby="home-tasks-title">
-        <header class="home-section-heading"><h2 id="home-tasks-title">待办任务 <span class="section-count">{{ upcoming.length }}</span></h2><el-icon><Calendar /></el-icon></header>
-        <div class="home-task-list">
-          <article v-for="task in upcoming" :key="task.id" class="home-task" :data-category="task.category">
-            <div class="home-task-category"><span><i></i>{{ task.category }}</span><span class="task-due" :class="{ soon: daysLeft(task.deadline) <= 3 }">{{ daysLeft(task.deadline) }} 天后截止</span></div><h3>{{ task.title }}</h3>
-            <div class="home-task-bottom"><small>{{ dateLabel(task.deadline) }}</small><button class="home-link" :disabled="disabled" :aria-label="`提交资料：${task.title}`" @click="emit('upload', task.id)">提交资料 <el-icon><ArrowRight /></el-icon></button></div>
-          </article>
-          <p v-if="!upcoming.length" class="home-quiet">暂无待办任务。</p><button class="home-task-all" @click="emit('navigate', 'tasks')">查看全部任务 <el-icon><ArrowRight /></el-icon></button>
+      <aside class="home-agenda">
+        <section class="home-tasks" aria-labelledby="home-tasks-title">
+          <header class="home-section-heading"><h2 id="home-tasks-title">待办任务 <span class="section-count">{{ upcoming.length }}</span></h2><button class="home-link" @click="emit('navigate', 'tasks')">全部任务 <el-icon><ArrowRight /></el-icon></button></header>
+          <div class="home-task-list">
+            <article v-for="task in upcoming" :key="task.id" class="home-task" :data-category="task.category">
+              <div class="task-calendar" aria-hidden="true"><span>{{ monthLabel(task.deadline) }}</span><strong>{{ dayLabel(task.deadline) }}</strong></div>
+              <div class="home-task-detail"><div class="home-task-category"><span>{{ task.category }}</span><span class="task-due" :class="{ soon: daysLeft(task.deadline) <= 3 }">{{ daysLeft(task.deadline) }} 天后截止</span></div><h3>{{ task.title }}</h3>
+              <div class="home-task-bottom"><small>{{ dateLabel(task.deadline) }}</small><button class="home-link" :disabled="disabled" :aria-label="`提交资料：${task.title}`" @click="emit('upload', task.id)">提交 <el-icon><ArrowRight /></el-icon></button></div></div>
+            </article>
+            <p v-if="!upcoming.length" class="home-quiet">暂无待办任务</p>
+          </div>
+        </section>
+        <div v-if="unreadChat || unreadBroadcast" class="home-unread" aria-label="未读消息">
+          <button v-if="unreadChat" class="home-link" @click="emit('navigate', 'chat')">{{ unreadChat }} 条未读消息 <el-icon><ArrowRight /></el-icon></button>
+          <button v-if="unreadBroadcast" class="home-link" @click="emit('navigate', 'broadcasts')">{{ unreadBroadcast }} 条未读广播 <el-icon><ArrowRight /></el-icon></button>
         </div>
-      </section>
+        <details class="home-reference"><summary>摄影参考 <span>3 张素材</span><el-icon><ArrowRight /></el-icon></summary><PhotoGallery @preview="emit('photo', $event)" /></details>
+      </aside>
     </div>
-    <section class="home-team" aria-labelledby="home-team-title">
-      <header class="home-section-heading"><h2 id="home-team-title">团队与工具</h2><span>继续协作</span></header>
-      <div class="home-shortcuts">
-        <button class="home-shortcut" data-section="chat" @click="emit('navigate', 'chat')"><span class="shortcut-symbol"><el-icon><ChatDotRound /></el-icon></span><span><strong>内部通讯 <b v-if="unreadChat">{{ unreadChat }}</b></strong><small>联系同事，分享工作资料</small></span><el-icon><ArrowRight /></el-icon></button>
-        <button class="home-shortcut" data-section="broadcasts" @click="emit('navigate', 'broadcasts')"><span class="shortcut-symbol"><el-icon><Bell /></el-icon></span><span><strong>广播通知 <b v-if="unreadBroadcast">{{ unreadBroadcast }}</b></strong><small>查看学院通知与置顶消息</small></span><el-icon><ArrowRight /></el-icon></button>
-        <button class="home-shortcut" data-section="assistant" @click="emit('navigate', 'assistant')"><span class="shortcut-symbol"><el-icon><EditPen /></el-icon></span><span><strong>AI 助手</strong><small>查询规则，起草归档说明</small></span><el-icon><ArrowRight /></el-icon></button>
-      </div>
-    </section>
   </div>
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { ArrowRight, Bell, Calendar, ChatDotRound, CircleCheck, Clock, Coin, EditPen, Files, FolderOpened, Plus } from '@element-plus/icons-vue';
+import { ArrowRight, FolderOpened, Plus } from '@element-plus/icons-vue';
 import { dateLabel, fileSize, statusText, type Archive } from '../data';
 import ArchiveThumbnail from './ArchiveThumbnail.vue';
 import PhotoGallery from './PhotoGallery.vue';
@@ -62,4 +62,6 @@ const recent = computed(() => (pendingOnly.value ? props.files.filter(file => fi
 const upcoming = computed(() => props.tasks.filter(task => task.deadline > props.now).sort((a, b) => a.deadline - b.deadline).slice(0, 2));
 const today = computed(() => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: 'long', day: 'numeric', weekday: 'long' }).format(props.now));
 const daysLeft = (deadline: number) => Math.max(0, Math.ceil((deadline - props.now) / 86400000));
+const monthLabel = (deadline: number) => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: 'numeric' }).format(deadline);
+const dayLabel = (deadline: number) => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', day: '2-digit' }).format(deadline).replace('日', '');
 </script>

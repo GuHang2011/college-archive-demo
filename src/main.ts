@@ -5,5 +5,6 @@ import 'element-plus/dist/index.css';
 import App from './App.vue';
 import './design.css';
 import './photography.css';
+import './workspace.css';
 
 createApp(App).use(ElementPlus, { locale: zhCn, size: 'default' }).mount('#app');

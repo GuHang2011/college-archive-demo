@@ -1,20 +1,19 @@
 <template>
   <section class="assistant-page" aria-label="AI 助手工作区">
     <div class="page-heading assistant-heading">
-      <div><h1>AI 助手</h1><p>查询归档规则，起草说明，整理待办。</p></div>
-      <el-button :icon="Connection" :disabled="sending" @click="showConnection">{{ online ? '连接设置' : '连接 AI' }}</el-button>
+      <div><h1>AI 助手</h1></div>
+      <div class="assistant-service"><div class="assistant-status" :class="{ connected: online }"><i></i>{{ online ? `已连接 · ${model}` : '离线指引 · 未连接大模型' }}</div><el-button :icon="Connection" :disabled="sending" @click="showConnection">{{ online ? '连接设置' : '连接 AI' }}</el-button></div>
     </div>
     <div class="assistant-layout">
       <aside class="assistant-tools">
-        <div class="assistant-identity"><h2>归档工具</h2><p>选择常用问题，或直接输入。</p></div>
-        <div class="assistant-status" :class="{ connected: online }"><i></i>{{ online ? `已连接 · ${model}` : '离线指引 · 未连接大模型' }}</div>
-        <div class="assistant-presets"><span class="overline">常用问题</span><button v-for="item in presets" :key="item.title" :disabled="sending" @click="input = item.prompt"><el-icon><component :is="item.icon" /></el-icon><span>{{ item.title }}<small>{{ item.description }}</small></span><span>↗</span></button></div>
-        <div class="assistant-context-summary"><strong>当前浏览器 · {{ files.length }} 份资料</strong><p>可按需附带清单，帮助理解归档情况。不会读取或发送文件正文、照片。</p><el-button link type="primary" @click="emit('navigate', 'archives')">查看资料归档 →</el-button></div>
+        <div class="assistant-identity"><h2>常用操作</h2></div>
+        <div class="assistant-presets"><button v-for="item in presets" :key="item.title" :disabled="sending" :aria-pressed="input === item.prompt" @click="selectPreset(item.prompt)"><el-icon><component :is="item.icon" /></el-icon><span>{{ item.title }}<small>{{ item.description }}</small></span></button></div>
+        <div class="assistant-context-summary"><strong>当前浏览器 · {{ files.length }} 份资料</strong><p>清单仅含文件名、分类、状态和备注。</p><el-button link type="primary" @click="emit('navigate', 'archives')">查看资料归档</el-button></div>
       </aside>
       <div class="assistant-chat">
-        <div class="assistant-chat-top"><span>{{ online ? '与 AI 对话' : '本地操作与模板指引' }}</span><el-button link :disabled="sending || !messages.length" @click="clearMessages">清空对话</el-button></div>
-        <div ref="messageList" class="assistant-messages" role="log" aria-label="助手对话记录" aria-live="polite" :aria-busy="sending">
-          <div v-if="!messages.length" class="assistant-welcome"><span>选择一项操作开始</span><p>{{ online ? '输入问题，或选择常用问题开始。' : '尚未连接 AI。可先使用本地指引和说明模板，连接服务后再进行问答。' }}</p><div class="assistant-note">内容可以修改，提交前请核对。</div></div>
+        <div class="assistant-chat-top"><span>对话记录 <small>{{ messages.length ? `${messages.length} 条` : '' }}</small></span><el-button link :disabled="sending || !messages.length" @click="clearMessages">清空对话</el-button></div>
+        <div ref="messageList" class="assistant-messages" :class="{ 'is-empty': !messages.length }" role="log" aria-label="助手对话记录" aria-live="polite" :aria-busy="sending">
+          <div v-if="!messages.length" class="assistant-welcome"><el-icon><Document /></el-icon><div><span>暂无对话记录</span><p>{{ online ? '在下方输入问题，或从常用操作填入问题。' : '当前可查询操作步骤、统计归档清单或取用说明模板。' }}</p></div></div>
           <article v-for="message in messages" :key="message.id" class="assistant-message" :class="message.role">
             <div class="message-byline">{{ message.role === 'user' ? '你' : message.source }}<span v-if="message.failed"> · 未完成</span></div>
             <div class="message-content">{{ message.content }}</div>
@@ -26,9 +25,9 @@
         <form class="assistant-composer" @submit.prevent="send()">
           <div class="assistant-context-control"><el-checkbox v-model="includeContext" :disabled="sending">附带归档清单（最多 20 条）</el-checkbox><button type="button" @click="contextVisible = true">查看发送范围</button></div>
           <label class="sr-only" for="assistant-question">向助手提问</label>
-          <textarea id="assistant-question" v-model="input" :disabled="sending" maxlength="4000" rows="3" placeholder="例如：帮我起草课程建设资料的归档说明…" @keydown="onKeydown"></textarea>
+          <textarea id="assistant-question" ref="questionInput" v-model="input" :disabled="sending" maxlength="4000" rows="3" placeholder="输入问题或材料说明要求" @keydown="onKeydown"></textarea>
           <div class="assistant-composer-bottom"><small>{{ input.length }}/4000 · Ctrl / ⌘ + Enter 发送</small><el-button v-if="sending" @click="stop">停止生成</el-button><el-button v-else type="primary" :icon="Position" native-type="submit" :disabled="!input.trim()">{{ online ? '发送给 AI' : '获取本地指引' }}</el-button></div>
-          <p class="assistant-disclosure">{{ online ? '发送后，问题、最近对话及勾选的清单会交给已连接服务的模型处理。AI 建议需核对。' : '离线指引来自内置规则与模板，不是大模型生成；输入不会发送到服务器。' }} 对话仅保留在本页，刷新后清空。</p>
+          <p class="assistant-disclosure">{{ online ? '问题、最近对话及勾选的清单将发送至已连接模型；回复请核对后使用。' : '离线回复来自规则与模板，不调用模型，输入不发送至服务器。' }} 对话刷新后清空。</p>
         </form>
       </div>
     </div>
@@ -40,7 +39,7 @@
       <p class="connection-footnote">连接检查不调用模型、不消耗模型额度。更换连接或切换离线模式会清空对话；访问码只在当前页面内存中保留。</p>
       <template #footer><el-button v-if="online" :disabled="connecting" @click="disconnect">切换离线指引</el-button><el-button :loading="connecting" type="primary" @click="connect">检查并连接</el-button></template>
     </el-dialog>
-    <el-dialog v-model="contextVisible" title="发送范围" width="min(620px, 94vw)"><p class="connection-intro">{{ online ? '每次发送都会附带本次问题和最近的 AI 对话（最多 6 轮）。' : '当前为离线模式，数据不会离开浏览器。' }} 只有勾选「附带归档清单」才会额外使用以下内容；文件正文和照片始终不发送。</p><pre class="context-preview">{{ JSON.stringify(context, null, 2) }}</pre></el-dialog>
+    <el-dialog v-model="contextVisible" title="发送范围" width="min(620px, 94vw)"><p class="connection-intro">{{ online ? '每次发送都会附带本次问题和最近的 AI 对话（最多 6 轮）。' : '当前为离线模式，数据不会离开浏览器。' }} 只有勾选「附带归档清单」才会额外使用以下内容；文件正文和照片始终不发送。</p><div class="assistant-context-overview"><span>全部 {{ context.total }}</span><span>待审核 {{ context.pending }}</span><span>已通过 {{ context.approved }}</span><span>需修改 {{ context.rejected }}</span></div><div class="assistant-context-records"><article v-for="(record, index) in context.records" :key="index"><strong>{{ record.name }}</strong><span>{{ record.category }} · {{ record.status }}</span><p>{{ record.remark || '无备注' }}</p></article><p v-if="!context.records.length">暂无归档资料。</p></div></el-dialog>
   </section>
 </template>
 
@@ -51,16 +50,19 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import type { Archive } from '../data';
 import { archiveContext, gatewayRequest, localGuidance, normalizeGateway, type Message } from '../assistant';
 import '../assistant.css';
+import '../assistant-work.css';
 
 const props = defineProps<{ files: Archive[]; active: boolean }>();
 const emit = defineEmits<{ (e: 'navigate', pane: 'archives' | 'tasks'): void; (e: 'draft', text: string): void }>();
 const presets = [
-  { title: '整理归档清单', description: '梳理现状与下一步', icon: List, prompt: '请分析我的归档清单，给出优先处理事项和分类建议。' },
-  { title: '起草材料说明', description: '从空白开始写一段', icon: Document, prompt: '请起草一份教学建设资料的归档说明，控制在 200 字内，未知信息用【待补充】标记。' },
-  { title: '检查审核要点', description: '让修改意见更清楚', icon: ChatDotRound, prompt: '审核资料时应该检查哪些内容？请提供一段礼貌、具体的修改建议模板。' },
-  { title: '如何拍照归档', description: '跟着步骤完成采集', icon: Camera, prompt: '如何使用摄像头拍照并完成资料归档？' },
+  { title: '整理归档清单', description: '数量、分类与待办', icon: List, prompt: '请分析我的归档清单，给出优先处理事项和分类建议。' },
+  { title: '起草材料说明', description: '200 字以内的说明草稿', icon: Document, prompt: '请起草一份教学建设资料的归档说明，控制在 200 字内，未知信息用【待补充】标记。' },
+  { title: '检查审核要点', description: '检查项目与修改意见', icon: ChatDotRound, prompt: '审核资料时应该检查哪些内容？请提供一段礼貌、具体的修改建议模板。' },
+  { title: '如何拍照归档', description: '相机授权与上传步骤', icon: Camera, prompt: '如何使用摄像头拍照并完成资料归档？' },
 ];
 const input = ref(''), messages = ref<Message[]>([]), includeContext = ref(false), contextVisible = ref(false);
+const questionInput = ref<HTMLTextAreaElement>();
+async function selectPreset(prompt: string) { input.value = prompt; await nextTick(); questionInput.value?.focus(); }
 const context = computed(() => archiveContext(props.files));
 const online = ref(false), gateway = ref(''), accessToken = ref(''), model = ref('');
 const sending = ref(false), error = ref(''), messageList = ref<HTMLElement>();

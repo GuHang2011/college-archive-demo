@@ -1,5 +1,5 @@
 <template>
-  <div class="demo-shell" :class="{ 'home-view': pane === 'overview' }">
+  <div class="demo-shell" :class="{ 'home-view': pane === 'overview', 'work-view': !isLoginView }">
     <aside class="sidebar">
       <a class="brand" href="#overview"><span class="brand-mark"><el-icon><Collection /></el-icon></span><span><strong>学院资料归档</strong><small>学院工作空间</small></span></a>
       <div class="sidebar-label">工作空间 <span>演示版</span></div>
@@ -27,7 +27,7 @@
           <div class="avatar" aria-hidden="true">{{ role === 'teacher' ? '师' : '管' }}</div>
         </div>
       </header>
-      <div class="demo-banner"><span class="demo-pill">在线演示</span><span>{{ ['chat', 'broadcasts'].includes(pane) ? '内部通讯、广播及聊天附件由服务端保存，仅已登录的授权成员可以访问。' : '归档示例与试传文件仅保存在当前浏览器；内部通讯使用独立服务端。' }}</span><span class="local-indicator"><i></i>{{ ['chat', 'broadcasts'].includes(pane) ? '团队协作' : '归档体验' }}</span></div>
+      <div v-if="isLoginView" class="demo-banner"><span class="demo-pill">在线演示</span><span>内部通讯、广播及聊天附件由服务端保存，仅已登录的授权成员可以访问。</span><span class="local-indicator"><i></i>团队协作</span></div>
 
       <main v-loading="loading" class="main-content">
         <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button @click="initialize">重新加载</el-button></el-alert>
@@ -35,20 +35,27 @@
           <OverviewHome v-if="pane === 'overview'" :files="files" :pending="pending.length" :approved="approvedCount" :used-bytes="usedBytes" :tasks="tasks" :now="now" :unread-chat="unreadChat" :unread-broadcast="unreadBroadcast" :disabled="loading || busy || !!loadError" @upload="openUpload" @navigate="navigate" @preview="previewFile" @photo="openPhoto" />
 
           <template v-else-if="pane === 'tasks'">
-            <div class="page-heading"><div><h1>限时资料提交</h1><p>查看截止时间，按任务提交资料。</p></div><span class="page-count">{{ tasks.length }} 项演示任务</span></div>
-            <div class="task-cards"><article v-for="task in tasks" :key="task.id" class="task-card"><div class="task-card-top"><span class="task-category" :data-category="task.category">{{ task.category }}</span><el-tag :type="task.deadline > now ? 'success' : 'info'" effect="plain">{{ task.deadline > now ? '进行中' : '已截止' }}</el-tag></div><h2>{{ task.title }}</h2><p>{{ task.description }}</p><div class="task-meta"><span>截止时间</span><strong>{{ dateLabel(task.deadline) }}</strong></div><div class="task-card-bottom"><span>{{ submittedCount(task.id) ? `已提交 ${submittedCount(task.id)} 份` : '等待你的第一份资料' }}</span><el-button type="primary" :disabled="task.deadline <= now || busy" @click="openUpload(task.id)">{{ task.deadline <= now ? '提交已截止' : submittedCount(task.id) ? '补充资料' : '提交资料' }}</el-button></div></article></div>
+            <div class="page-heading"><div><h1>限时任务</h1></div><span class="page-count">{{ tasks.filter(task => task.deadline > now).length }} 项进行中 · {{ tasks.filter(task => task.deadline <= now).length }} 项已截止</span></div>
+            <div class="task-cards">
+              <div class="task-list-head" aria-hidden="true"><span>任务</span><span>截止时间</span><span>提交情况</span></div>
+              <article v-for="task in tasks" :key="task.id" class="task-card" :class="{ 'task-closed': task.deadline <= now }">
+                <div class="task-details"><span class="task-category" :data-category="task.category">{{ task.category }}</span><h2>{{ task.title }}</h2><p>{{ task.description }}</p></div>
+                <div class="task-meta"><strong>{{ dateLabel(task.deadline) }}</strong><span class="task-state" :class="{ active: task.deadline > now }"><i></i>{{ task.deadline > now ? '进行中' : '已截止' }}</span></div>
+                <div class="task-card-bottom"><span>{{ submittedCount(task.id) ? `已提交 ${submittedCount(task.id)} 份` : '尚未提交' }}</span><el-button :type="task.deadline > now ? 'primary' : 'default'" plain :disabled="task.deadline <= now || busy" @click="openUpload(task.id)">{{ task.deadline <= now ? '提交已截止' : submittedCount(task.id) ? '补充资料' : '提交资料' }}</el-button></div>
+              </article>
+            </div>
           </template>
 
           <template v-else-if="!['assistant', 'chat', 'broadcasts'].includes(pane)">
-            <div class="page-heading"><div><h1>{{ pane === 'audit' ? '资料审核' : '资料归档中心' }}</h1><p>{{ pane === 'audit' ? '正在以演示管理员身份操作，审核结果仅影响本浏览器。' : '查找、预览与管理已归档的资料。' }}</p></div><el-button v-if="pane === 'archives'" type="primary" :icon="Plus" :disabled="busy" @click="openUpload()">上传资料</el-button><span v-else class="page-count">{{ pending.length }} 份待审核</span></div>
+            <div class="page-heading"><div><h1>{{ pane === 'audit' ? '资料审核' : '资料归档' }}</h1></div><el-button v-if="pane === 'archives'" type="primary" :icon="Plus" :disabled="busy" @click="openUpload()">上传资料</el-button><span v-else class="page-count">{{ pending.length }} 份待审核 · 演示管理员</span></div>
             <section class="panel archive-panel"><div class="filters"><el-input v-model="keyword" :prefix-icon="Search" clearable placeholder="搜索文件名或备注" aria-label="搜索文件名或备注" /><el-select v-model="categoryFilter" clearable placeholder="全部分类" aria-label="按分类筛选"><el-option v-for="category in categories" :key="category" :label="category" :value="category" /></el-select><el-select v-if="pane === 'archives'" v-model="statusFilter" clearable placeholder="全部状态" aria-label="按审核状态筛选"><el-option v-for="(label, key) in statusText" :key="key" :label="label" :value="key" /></el-select><span class="filter-count">{{ filteredFiles.length }} 份资料</span></div>
               <el-table :data="filteredFiles" row-key="id" empty-text="没有符合条件的资料" class="archive-table"><el-table-column label="资料名称" min-width="260"><template #default="{ row }"><div class="file-title"><ArchiveThumbnail class="file-symbol" :data-category="row.category" :blob="row.blob" /><div><strong :title="row.name">{{ row.name }}</strong><small>{{ fileSize(row.size) }} · {{ row.sample ? '示例文件' : '本地试传' }}{{ row.taskId ? ' · 任务提交' : '' }}</small></div></div></template></el-table-column><el-table-column prop="category" label="分类" width="110" /><el-table-column label="审核状态" width="110"><template #default="{ row }"><el-tag :type="statusType[row.status as Status]" effect="light">{{ statusText[row.status as Status] }}</el-tag></template></el-table-column><el-table-column label="说明" min-width="190"><template #default="{ row }"><span class="file-remark">{{ row.status === 'REJECTED' ? row.rejectReason : row.remark || '—' }}</span></template></el-table-column><el-table-column label="归档时间" width="150"><template #default="{ row }">{{ dateLabel(row.createdAt) }}</template></el-table-column><el-table-column label="操作" :width="pane === 'audit' ? 205 : 195"><template #default="{ row }"><el-button link type="primary" @click="previewFile(row)">预览</el-button><template v-if="pane === 'audit'"><el-button link type="success" :disabled="busy" @click="review(row, 'APPROVED')">通过</el-button><el-button link type="danger" :disabled="busy" @click="review(row, 'REJECTED')">驳回</el-button></template><template v-else><el-button link type="primary" @click="downloadFile(row)">下载</el-button><el-button link type="danger" :disabled="busy" @click="remove(row)">删除</el-button></template></template></el-table-column></el-table>
-              <div class="table-foot"><span>文件保存在本浏览器中，可在页面左下角重置。</span><span>共 {{ filteredFiles.length }} 份资料</span></div>
+              <div class="table-foot"><span>{{ pane === 'audit' ? '审核结果仅影响当前浏览器的演示资料。' : '按归档时间排序' }}</span><span>共 {{ filteredFiles.length }} 份资料</span></div>
             </section>
           </template>
           <AiAssistant v-show="pane === 'assistant'" :key="assistantVersion" :active="pane === 'assistant'" :files="files" @navigate="navigate" @draft="useAssistantDraft" />
           <CollaborationWorkspace v-show="['chat', 'broadcasts'].includes(pane)" :active="['chat', 'broadcasts'].includes(pane)" :pane="pane" @photo="openPhoto" />
-          <footer class="page-footer"><span>学院资料归档 <i>·</i> 独立演示项目</span><button class="photo-credits-button" @click="openPhoto()">摄影素材与来源</button></footer>
+          <footer class="page-footer"><span v-if="isLoginView">学院资料归档 <i>·</i> 独立演示项目</span><span v-else>演示环境 <i>·</i> {{ ['chat', 'broadcasts'].includes(pane) ? '通讯与附件保存在已连接的服务端' : '归档资料保存在当前浏览器' }}</span><button class="photo-credits-button" @click="openPhoto()">摄影素材与来源</button></footer>
         </template>
       </main>
     </div>
@@ -80,13 +87,14 @@ import ReadingSettings from './components/ReadingSettings.vue';
 import OverviewHome from './components/OverviewHome.vue';
 import ArchiveThumbnail from './components/ArchiveThumbnail.vue';
 import { photos, photoUrl, type Photo } from './photos';
-import { unreadChat, unreadBroadcast } from './collaboration';
+import { collabState, unreadChat, unreadBroadcast } from './collaboration';
 import { ACCEPT, MAX_TOTAL, allFiles, categories, dateLabel, deleteFile, fileError, fileSize, openDatabase, replaceFiles, saveFiles, seedFiles, statusText, statusType, wasSeeded } from './data';
 import type { Archive, Status } from './data';
 import { applyTheme, loadTheme, themes } from './theme';
 
 type Pane = 'overview' | 'archives' | 'tasks' | 'audit' | 'assistant' | 'chat' | 'broadcasts';
 const pane = ref<Pane>('overview');
+const isLoginView = computed(() => ['chat', 'broadcasts'].includes(pane.value) && !collabState.value);
 const assistantVersion = ref(0);
 const role = ref('teacher');
 const selectedTheme = ref(loadTheme());
@@ -100,9 +108,9 @@ function openPhoto(photo: Photo = photos[0]) { selectedPhoto.value = photo; phot
 const now = ref(Date.now());
 const day = 86400000;
 const tasks = [
-  { id: 1, title: '教学成果与课程建设材料', category: '教学建设', deadline: Date.now() + 7 * day, description: '整理本学期课程设计、教学成果和课堂实践记录，支持文档、图片和现场拍照。' },
-  { id: 2, title: '创新实践与学生成长记录', category: '学生工作', deadline: Date.now() + 3 * day, description: '提交创新实践、学生竞赛与志愿活动的阶段材料，记录学生成长的每一步。' },
-  { id: 3, title: '上一阶段社会服务总结', category: '社会服务', deadline: Date.now() - day, description: '此项任务已截止，可查看任务说明，体验截止后不可提交的状态。' },
+  { id: 1, title: '教学成果与课程建设材料', category: '教学建设', deadline: now.value + 7 * day, description: '提交课程设计、教学成果及课堂实践记录。' },
+  { id: 2, title: '创新实践与学生成长记录', category: '学生工作', deadline: now.value + 3 * day, description: '提交学生竞赛、创新实践及志愿活动的阶段材料。' },
+  { id: 3, title: '上一阶段社会服务总结', category: '社会服务', deadline: now.value - day, description: '社会服务阶段总结及相关证明材料。' },
 ];
 const navigation = computed(() => [
   { id: 'overview' as Pane, label: '工作台', icon: House },
