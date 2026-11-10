@@ -19,11 +19,7 @@
         <div class="breadcrumb">学院工作空间 <span>/</span><strong>{{ pageTitle }}</strong></div>
         <div class="topbar-actions">
           <ReadingSettings />
-          <el-popover trigger="click" :width="272" placement="bottom-end">
-            <template #reference><el-button :icon="Brush" aria-label="切换界面主题">换肤</el-button></template>
-            <div class="theme-heading">界面配色<small>自动记住本浏览器的选择</small></div>
-            <div class="theme-grid"><button v-for="theme in themes" :key="theme.id" :aria-pressed="selectedTheme.id === theme.id" @click="selectTheme(theme)"><i :style="{ background: theme.color }"></i>{{ theme.name }}<span v-if="selectedTheme.id === theme.id">✓</span></button></div>
-          </el-popover>
+          <ThemeSettings />
           <el-select v-model="role" aria-label="切换演示角色" class="role-select" :disabled="busy"><el-option label="教师体验" value="teacher" /><el-option label="管理员体验" value="admin" /></el-select>
           <div class="avatar" aria-hidden="true">{{ role === 'teacher' ? '师' : '管' }}</div>
         </div>
@@ -74,13 +70,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Bell, Brush, Calendar, ChatDotRound, Collection, Files, House, Message, Plus, RefreshLeft, Stamp, UploadFilled } from '@element-plus/icons-vue';
+import { Bell, Calendar, ChatDotRound, Collection, Files, House, Message, Plus, RefreshLeft, Stamp, UploadFilled } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadFile } from 'element-plus';
 import CameraCapture from './components/CameraCapture.vue';
 import AiAssistant from './components/AiAssistant.vue';
 import CollaborationWorkspace from './components/CollaborationWorkspace.vue';
 import ReadingSettings from './components/ReadingSettings.vue';
+import ThemeSettings from './components/ThemeSettings.vue';
 import OverviewHome from './components/OverviewHome.vue';
 import ArchiveWorkspace from './components/ArchiveWorkspace.vue';
 import FileDetails from './components/FileDetails.vue';
@@ -89,15 +86,12 @@ import { photos, photoUrl, type Photo } from './photos';
 import { collabState, unreadChat, unreadBroadcast } from './collaboration';
 import { ACCEPT, MAX_TOTAL, allFiles, categories, dateLabel, deleteFile, fileError, fileSize, openDatabase, replaceFiles, saveFiles, seedFiles, wasSeeded } from './data';
 import type { Archive, Status } from './data';
-import { applyTheme, loadTheme, themes } from './theme';
 
 type Pane = 'overview' | 'archives' | 'tasks' | 'audit' | 'assistant' | 'chat' | 'broadcasts';
 const pane = ref<Pane>('overview');
 const isLoginView = computed(() => ['chat', 'broadcasts'].includes(pane.value) && !collabState.value);
 const assistantVersion = ref(0);
 const role = ref('teacher');
-const selectedTheme = ref(loadTheme());
-applyTheme(selectedTheme.value);
 const files = ref<Archive[]>([]), loading = ref(true), busy = ref(false), loadError = ref('');
 const detailId = ref(''), detailsVisible = ref(false);
 const detailFile = computed(() => files.value.find(file => file.id === detailId.value));
@@ -131,7 +125,6 @@ const approvedCount = computed(() => files.value.filter(file => file.status === 
 const usedBytes = computed(() => files.value.reduce((sum, file) => sum + file.size, 0));
 
 const submittedCount = (id: number) => files.value.filter(file => file.taskId === id && file.status !== 'REJECTED').length;
-const selectTheme = (theme: typeof themes[number]) => { selectedTheme.value = theme; applyTheme(theme); };
 const navigate = (next: Pane) => { if (!busy.value) location.hash = next; };
 function syncRoute() {
   const requested = location.hash.slice(1) as Pane;

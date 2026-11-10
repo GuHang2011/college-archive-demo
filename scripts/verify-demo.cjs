@@ -68,8 +68,10 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
     await check('Theme selection persists across reloads', async () => {
       await page.getByRole('button', { name: '切换界面主题' }).click();
       await page.getByRole('button', { name: '学院蓝' }).click();
+      const selectedAccent = await page.evaluate(() => document.documentElement.style.getPropertyValue('--accent'));
       await page.reload(); await awaitRows(5);
-      assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--accent')), '#2c62ad');
+      assert.equal(await page.evaluate(() => localStorage.getItem('college-demo-theme')), 'blue');
+      assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--accent')), selectedAccent);
     });
     await check('File upload persists in IndexedDB after refresh and can be searched', async () => {
       await openUpload();
@@ -128,7 +130,7 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
       await page.getByRole('button', { name: '重置演示数据', exact: true }).click();
       await page.getByRole('button', { name: '确认重置', exact: true }).click(); await page.getByText('演示数据已重置。', { exact: true }).waitFor();
       await go('资料归档'); await awaitRows(5); await page.reload(); await awaitRows(5);
-      assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--accent')), '#2c62ad');
+      assert.equal(await page.evaluate(() => localStorage.getItem('college-demo-theme')), 'blue');
     });
     await check('Application makes no API calls or third-party network requests', async () => {
       assert.deepEqual(requests.filter(url => /^https?:/.test(url) && !url.startsWith(new URL(base).origin + '/')), []);
