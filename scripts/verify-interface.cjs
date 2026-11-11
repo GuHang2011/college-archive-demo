@@ -19,23 +19,26 @@ const { chromium } = require('@playwright/test');
     await page.locator('.el-loading-mask').waitFor({ state: 'hidden' });
     const type = await page.evaluate(() => Object.fromEntries(['body', '.home-actions .el-button', '.recent-file-name strong', '.recent-file-name small'].map(selector => [selector, parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)])));
     assert.equal(type.body, 16); assert.equal(type['.home-actions .el-button'], 15);
-    assert.equal(type['.recent-file-name strong'], 16); assert.equal(type['.recent-file-name small'], 13);
+    assert.equal(type['.recent-file-name strong'], 16); assert.equal(type['.recent-file-name small'], 14);
     const colors = await page.locator('.recent-file-icon').evaluateAll(elements => elements.map(el => getComputedStyle(el).backgroundColor));
     assert.equal(new Set(colors).size, 4);
     await page.getByRole('group', { name: '首页资料筛选' }).getByRole('button', { name: /^待审核/ }).click();
     assert.equal(await page.locator('.recent-file').count(), 2);
     await page.getByRole('button', { name: '全部资料', exact: true }).click();
     assert.equal(await page.locator('.recent-file').count(), 5);
-    checks.push('Default body and file names are 16px; metadata is 13px; categories have distinct colors');
+    checks.push('Default body and file names are 16px; metadata is 14px; categories have distinct colors');
     await page.locator('.role-select').click(); await page.locator('.el-select-dropdown__item').getByText('管理员体验', { exact: true }).click();
     const routes = [['工作台', 'overview'], ['资料归档', 'archives'], ['限时任务', 'tasks'], ['资料审核', 'audit'], ['AI 助手', 'assistant'], ['内部通讯', 'chat'], ['广播通知', 'broadcasts']];
     const checkWidth = async label => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `Page overflow: ${label}`);
-    for (const width of [1440, 1024, 768, 390, 320]) {
+    for (const width of [1440, 1280, 1024, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const [label, route] of routes) {
         await page.getByRole('navigation').getByRole('button', { name: new RegExp('^' + label) }).click();
         await page.waitForFunction(({ route, label }) => location.hash === '#' + route && document.querySelector('nav button[aria-current="page"]')?.textContent.trim().startsWith(label), { route, label });
         await page.locator('main h1:visible').waitFor(); await checkWidth(`${width}/${route}`);
+        if (width >= 1024 && ['archives', 'audit'].includes(route)) {
+          assert.ok(await page.locator('.archive-table').evaluate(el => el.querySelector('.el-table__body').getBoundingClientRect().width <= el.getBoundingClientRect().width + 1), `${width}px: archive columns must fit without horizontal scrolling`);
+        }
         if (route === 'assistant') {
           for (const title of ['整理归档清单', '起草材料说明', '检查审核要点', '如何拍照归档']) {
             assert.ok(await page.locator('.assistant-presets button > span').getByText(title, { exact: false }).isVisible(), `${width}px: shortcut label ${title} must remain visible`);
@@ -48,6 +51,7 @@ const { chromium } = require('@playwright/test');
     }
     await page.getByRole('button', { name: '字体与阅读设置' }).click();
     await page.getByRole('button', { name: '大字', exact: true }).click();
+    assert.equal(await page.locator('body').evaluate(el => parseFloat(getComputedStyle(el).fontSize)), 20);
     await page.getByRole('button', { name: '字体与阅读设置' }).click();
     await page.locator('.reading-settings').waitFor({ state: 'hidden' });
     for (const [label, route] of routes) {
@@ -57,7 +61,10 @@ const { chromium } = require('@playwright/test');
     }
     checks.push('320px: all routes remain usable with large text; reading popover closes');
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.getByRole('button', { name: '字体与阅读设置' }).click(); await page.getByRole('button', { name: '标准', exact: true }).click(); await page.getByRole('button', { name: '字体与阅读设置' }).click();
+    await page.getByRole('button', { name: '字体与阅读设置' }).click();
+    await page.getByRole('button', { name: '恢复默认', exact: true }).click();
+    assert.equal(await page.locator('body').evaluate(el => parseFloat(getComputedStyle(el).fontSize)), 16);
+    await page.getByRole('button', { name: '字体与阅读设置' }).click();
     await page.locator('.reading-settings').waitFor({ state: 'hidden' });
     await page.getByRole('navigation').getByRole('button', { name: '资料归档', exact: true }).click();
     await page.getByRole('button', { name: '上传资料', exact: true }).click();

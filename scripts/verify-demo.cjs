@@ -108,7 +108,7 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
       const box = page.getByRole('dialog', { name: '驳回资料', exact: true });
       await box.getByRole('button', { name: '确认驳回' }).click(); await page.getByText('请填写 1–200 字的驳回原因', { exact: true }).waitFor();
       await box.getByRole('textbox').fill('请补充活动说明'); await box.getByRole('button', { name: '确认驳回' }).click(); await awaitRows(2);
-      await go('资料归档'); await awaitRows(7); await page.locator('.archive-table').getByText('请补充活动说明', { exact: true }).waitFor();
+      await go('资料归档'); await awaitRows(7); await page.locator('.archive-table .file-inline-note').filter({ hasText: '请补充活动说明' }).waitFor();
     });
     await check('Mobile tasks support submissions and the expired task is disabled', async () => {
       await page.setViewportSize({ width: 390, height: 844 }); await go('限时任务');

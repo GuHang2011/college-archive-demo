@@ -29,10 +29,10 @@
       <main v-loading="loading" class="main-content">
         <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon><el-button @click="initialize">重新加载</el-button></el-alert>
         <template v-else>
-          <OverviewHome v-if="pane === 'overview'" :files="files" :pending="pending.length" :approved="approvedCount" :used-bytes="usedBytes" :tasks="tasks" :now="now" :unread-chat="unreadChat" :unread-broadcast="unreadBroadcast" :disabled="loading || busy || !!loadError" @upload="openUpload" @navigate="navigate" @preview="previewFile" @photo="openPhoto" />
+          <OverviewHome v-if="pane === 'overview'" :files="files" :pending="pending.length" :approved="approvedCount" :tasks="tasks" :now="now" :unread-chat="unreadChat" :unread-broadcast="unreadBroadcast" :disabled="loading || busy || !!loadError" @upload="openUpload" @navigate="navigate" @preview="previewFile" @photo="openPhoto" />
 
           <template v-else-if="pane === 'tasks'">
-            <div class="page-heading"><div><p class="workspace-eyebrow">资料管理</p><h1>限时任务<span class="heading-total">{{ tasks.length }}</span></h1></div><span class="page-count">截止时间临近的任务优先</span></div>
+            <div class="page-heading"><div><h1>限时任务<span class="heading-total">{{ tasks.length }} 项</span></h1><p class="page-description">按截止时间安排提交，已提交的任务可继续补充资料。</p></div></div>
             <div class="task-cards">
               <div class="workspace-tabs" role="group" aria-label="任务状态视图"><button :aria-pressed="taskFilter === 'all'" @click="taskFilter = 'all'">全部任务<span>{{ tasks.length }}</span></button><button :aria-pressed="taskFilter === 'active'" @click="taskFilter = 'active'">进行中<span>{{ tasks.filter(task => task.deadline > now).length }}</span></button><button :aria-pressed="taskFilter === 'closed'" @click="taskFilter = 'closed'">已截止<span>{{ tasks.filter(task => task.deadline <= now).length }}</span></button></div>
               <div class="task-list-head" aria-hidden="true"><span>任务</span><span>截止时间</span><span>提交情况</span></div>

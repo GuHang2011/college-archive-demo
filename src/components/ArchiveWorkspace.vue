@@ -1,6 +1,6 @@
 ﻿<template>
   <section class="archive-workspace" :aria-label="audit ? '资料审核工作区' : '资料归档工作区'">
-    <div class="page-heading"><div><p class="workspace-eyebrow">资料管理</p><h1>{{ audit ? '资料审核' : '资料归档' }}<span class="heading-total">{{ audit ? pendingCount : files.length }}</span></h1></div><el-button v-if="!audit" type="primary" :icon="Plus" :disabled="disabled" @click="emit('upload')">上传资料</el-button><span v-else class="page-count">演示管理员</span></div>
+    <div class="page-heading"><div><h1>{{ audit ? '资料审核' : '资料归档' }}<span class="heading-total">{{ audit ? pendingCount : files.length }} 份</span></h1><p class="page-description">{{ audit ? '检查材料与归档说明，通过审核或填写修改意见。' : '按分类与审核状态查找资料，点击文件名查看详情。' }}</p></div><el-button v-if="!audit" type="primary" :icon="Plus" :disabled="disabled" @click="emit('upload')">上传资料</el-button><span v-else class="page-count">演示管理员</span></div>
     <section class="archive-surface">
       <div v-if="!audit" class="workspace-tabs" role="group" aria-label="资料状态视图">
         <button v-for="view in views" :key="view.value" :aria-pressed="status === view.value" @click="status = view.value">{{ view.label }}<span>{{ view.count }}</span></button>
@@ -13,12 +13,10 @@
       </div>
       <div v-if="keyword.trim() || category || status" class="active-filters"><span>当前筛选</span><span v-if="status">{{ statusText[status] }}</span><span v-if="category">{{ category }}</span><span v-if="keyword.trim()">“{{ keyword.trim() }}”</span><button @click="clearFilters">清除筛选</button></div>
       <el-table :data="pageFiles" row-key="id" class="archive-table" :class="{ 'is-compact': compact }" empty-text="没有符合条件的资料">
-        <el-table-column label="资料名称" min-width="310"><template #default="{ row }"><div class="file-title"><ArchiveThumbnail class="file-symbol" :data-category="row.category" :blob="row.blob" /><div><button class="file-name-button" :aria-label="`查看资料详情：${row.name}`" @click="emit('detail', row)"><strong :title="row.name">{{ row.name }}</strong></button><small>{{ fileSize(row.size) }} · {{ row.sample ? '示例文件' : '本地试传' }}{{ row.taskId ? ' · 任务提交' : '' }}</small></div></div></template></el-table-column>
-        <el-table-column label="分类" width="112"><template #default="{ row }"><span class="category-label" :data-category="row.category"><i></i>{{ row.category }}</span></template></el-table-column>
-        <el-table-column label="审核状态" width="110"><template #default="{ row }"><span class="record-status" :data-status="row.status"><i></i>{{ statusText[row.status as Status] }}</span></template></el-table-column>
-        <el-table-column label="说明" min-width="190"><template #default="{ row }"><span class="file-remark" :title="row.status === 'REJECTED' ? row.rejectReason : row.remark">{{ row.status === 'REJECTED' ? row.rejectReason : row.remark || '—' }}</span></template></el-table-column>
-        <el-table-column label="归档时间" width="142"><template #default="{ row }"><time class="record-time">{{ dateLabel(row.createdAt) }}</time></template></el-table-column>
-        <el-table-column label="操作" :width="audit ? 180 : 165" fixed="right"><template #default="{ row }"><div class="record-actions"><el-button link type="primary" @click="emit('preview', row)">预览</el-button><template v-if="audit"><el-button link type="success" :disabled="disabled" @click="emit('review', row, 'APPROVED')">通过</el-button><el-button link type="danger" :disabled="disabled" @click="emit('review', row, 'REJECTED')">驳回</el-button></template><template v-else><el-button link type="primary" @click="emit('download', row)">下载</el-button><el-button link type="danger" :disabled="disabled" @click="emit('remove', row)">删除</el-button></template></div></template></el-table-column>
+        <el-table-column label="资料名称" min-width="312"><template #default="{ row }"><div class="file-title"><ArchiveThumbnail class="file-symbol" :data-category="row.category" :blob="row.blob" /><div><button class="file-name-button" :aria-label="`查看资料详情：${row.name}`" @click="emit('detail', row)"><strong :title="row.name">{{ row.name }}</strong></button><div class="file-metadata"><span class="category-label" :data-category="row.category"><i></i>{{ row.category }}</span><span>{{ fileSize(row.size) }}</span><span>{{ row.sample ? '示例文件' : row.taskId ? '任务提交' : '本地上传' }}</span></div><p v-if="row.status === 'REJECTED'" class="file-inline-note is-feedback" :title="row.rejectReason">修改意见：{{ row.rejectReason || '请查看资料详情' }}</p><p v-else-if="!row.sample && row.remark" class="file-inline-note" :title="row.remark">{{ row.remark }}</p></div></div></template></el-table-column>
+        <el-table-column label="审核状态" width="122"><template #default="{ row }"><span class="record-status" :data-status="row.status"><i></i>{{ statusText[row.status as Status] }}</span></template></el-table-column>
+        <el-table-column label="归档时间" width="136"><template #default="{ row }"><time class="record-time" :datetime="new Date(row.createdAt).toISOString()"><span>{{ dateOnly(row.createdAt) }}</span><small>{{ timeOnly(row.createdAt) }}</small></time></template></el-table-column>
+        <el-table-column label="操作" width="176" fixed="right"><template #default="{ row }"><div class="record-actions"><el-button link type="primary" @click="emit('preview', row)">预览</el-button><template v-if="audit"><el-button link type="success" :disabled="disabled" @click="emit('review', row, 'APPROVED')">通过</el-button><el-button link type="danger" :disabled="disabled" @click="emit('review', row, 'REJECTED')">驳回</el-button></template><template v-else><el-button link type="primary" @click="emit('download', row)">下载</el-button><el-button link type="danger" :disabled="disabled" @click="emit('remove', row)">删除</el-button></template></div></template></el-table-column>
       </el-table>
       <div class="archive-mobile-list">
         <article v-for="file in pageFiles" :key="file.id" class="archive-mobile-record">
@@ -29,7 +27,7 @@
         </article>
       </div>
       <div v-if="!filtered.length" class="archive-empty"><el-icon><FolderOpened /></el-icon><strong>{{ audit && !pendingCount ? '暂无待审核资料' : '没有符合条件的资料' }}</strong><button v-if="keyword || category || status" class="home-link" @click="clearFilters">清除筛选</button></div>
-      <footer class="archive-list-footer"><span>{{ filtered.length ? `显示 ${start + 1}–${Math.min(start + pageSize, filtered.length)} 条，共 ${filtered.length} 份资料` : '0 份资料' }}</span><el-pagination v-if="filtered.length > pageSize" v-model:current-page="page" :page-size="pageSize" :total="filtered.length" layout="prev, pager, next" small /><span v-else>{{ audit ? '审核结果仅保存在当前浏览器' : '点击文件名查看详情' }}</span></footer>
+      <footer class="archive-list-footer"><span>{{ filtered.length ? `显示 ${start + 1}–${Math.min(start + pageSize, filtered.length)} 条，共 ${filtered.length} 份资料` : '0 份资料' }}</span><el-pagination v-if="filtered.length > pageSize" v-model:current-page="page" :page-size="pageSize" :total="filtered.length" layout="prev, pager, next" small /></footer>
     </section>
   </section>
 </template>
@@ -42,6 +40,8 @@ const props = defineProps<{ files: Archive[]; audit: boolean; disabled: boolean 
 const emit = defineEmits<{ (e: 'upload'): void; (e: 'detail' | 'preview' | 'download' | 'remove', file: Archive): void; (e: 'review', file: Archive, status: Status): void }>();
 const keyword = ref(''), category = ref(''), status = ref<Status | ''>(''), order = ref('newest'), compact = ref(false), page = ref(1);
 const pageSize = 12;
+const dateOnly = (value: number) => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(value);
+const timeOnly = (value: number) => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false }).format(value);
 const pendingCount = computed(() => props.files.filter(file => file.status === 'PENDING').length);
 const views = computed(() => [{ value: '' as const, label: '全部资料', count: props.files.length }, ...(['PENDING', 'APPROVED', 'REJECTED'] as Status[]).map(value => ({ value, label: statusText[value], count: props.files.filter(file => file.status === value).length }))]);
 const filtered = computed(() => {

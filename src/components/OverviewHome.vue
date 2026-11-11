@@ -8,22 +8,21 @@
       <div><dt>归档资料</dt><dd>{{ files.length }}<small>份</small></dd></div>
       <div class="summary-pending"><dt><i></i>待审核</dt><dd>{{ pending }}</dd></div>
       <div class="summary-approved"><dt><i></i>已通过</dt><dd>{{ approved }}</dd></div>
-      <div><dt>已用空间</dt><dd>{{ (usedBytes / 1024 / 1024).toFixed(1) }}<small>MB / 50 MB</small></dd></div>
+      <div class="summary-rejected"><dt><i></i>需修改</dt><dd>{{ files.filter(file => file.status === 'REJECTED').length }}</dd></div>
     </dl>
     <div class="home-columns">
       <section class="home-library" aria-labelledby="recent-title">
         <header class="home-section-heading"><h2 id="recent-title">最近归档</h2><button class="home-link" @click="emit('navigate', 'archives')">查看全部 <el-icon><ArrowRight /></el-icon></button></header>
         <div class="home-view-switch" role="group" aria-label="首页资料筛选"><button :aria-pressed="!pendingOnly" @click="pendingOnly = false">全部资料</button><button :aria-pressed="pendingOnly" @click="pendingOnly = true">待审核 <span>{{ pending }}</span></button></div>
         <div v-if="recent.length" class="recent-files">
-          <div class="recent-columns" aria-hidden="true"><span>资料名称</span><span>状态</span></div>
           <button v-for="file in recent" :key="file.id" class="recent-file" :aria-label="`预览 ${file.name}`" @click="emit('preview', file)">
             <ArchiveThumbnail class="recent-file-icon" :data-category="file.category" :blob="file.blob" />
-            <span class="recent-file-name"><strong :title="file.name">{{ file.name }}</strong><small>{{ file.category }}<i>·</i>{{ dateLabel(file.createdAt) }}<i>·</i>{{ fileSize(file.size) }}</small></span>
+            <span class="recent-file-name"><strong :title="file.name">{{ file.name }}</strong><small><span>{{ file.category }}</span><span>{{ dateLabel(file.createdAt) }}</span><span class="recent-file-size">{{ fileSize(file.size) }}</span></small></span>
             <span class="recent-file-status" :class="file.status.toLowerCase()"><i></i>{{ statusText[file.status] }}</span><el-icon class="recent-file-arrow"><ArrowRight /></el-icon>
           </button>
         </div>
         <div v-else class="home-empty"><el-icon><FolderOpened /></el-icon><h3>{{ pendingOnly ? '暂无待审核资料' : '暂无归档资料' }}</h3><button v-if="!pendingOnly" class="home-link" :disabled="disabled" @click="emit('upload')">上传资料 <el-icon><ArrowRight /></el-icon></button></div>
-        <p class="home-library-note">最近 {{ recent.length }} 份 · 按归档时间排序</p>
+        <p class="home-library-note">最近 {{ recent.length }} 份 · 点击文件预览</p>
       </section>
       <aside class="home-agenda">
         <section class="home-tasks" aria-labelledby="home-tasks-title">
@@ -55,7 +54,7 @@ import PhotoGallery from './PhotoGallery.vue';
 import type { Photo } from '../photos';
 import '../home.css';
 type Destination = 'archives' | 'tasks' | 'chat' | 'broadcasts' | 'assistant';
-const props = defineProps<{ files: Archive[]; pending: number; approved: number; usedBytes: number; now: number; tasks: { id: number; title: string; category: string; deadline: number }[]; unreadChat: number; unreadBroadcast: number; disabled: boolean }>();
+const props = defineProps<{ files: Archive[]; pending: number; approved: number; now: number; tasks: { id: number; title: string; category: string; deadline: number }[]; unreadChat: number; unreadBroadcast: number; disabled: boolean }>();
 const emit = defineEmits<{ (e: 'upload', taskId?: number): void; (e: 'navigate', destination: Destination): void; (e: 'preview', file: Archive): void; (e: 'photo', photo: Photo): void }>();
 const pendingOnly = ref(false);
 const recent = computed(() => (pendingOnly.value ? props.files.filter(file => file.status === 'PENDING') : props.files).slice(0, 5));
